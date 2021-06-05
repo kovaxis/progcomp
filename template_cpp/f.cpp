@@ -10,6 +10,8 @@ using namespace std;
 #define invrep2(i, n) invrep3(i, 0, n)
 #define invrep(...) REPGET(__VA_ARGS__, invrep3, invrep2)(__VA_ARGS__)
 
+typedef long long ll;
+
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(NULL);
