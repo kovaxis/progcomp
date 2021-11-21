@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "Team 1" | py XtremeWinners.py
+echo "Knapsackers@UNT" | py XtremeWinners.py
+echo "MoraSeekers" | py XtremeWinners.py
+echo "SurpriseTeam" | py XtremeWinners.py
+echo "CuSAT" | py XtremeWinners.py
+echo "DongskarPedongi" | py XtremeWinners.py
+echo "cofrades" | py XtremeWinners.py
+echo "viRUs" | py XtremeWinners.py
+echo "TeamName" | py XtremeWinners.py
+echo "TeamEPFL1" | py XtremeWinners.py
+echo "whatevs" | py XtremeWinners.py
+echo "WildCornAncestors" | py XtremeWinners.py
+echo "TheCornInTheFields" | py XtremeWinners.py
+echo "Aurora" | py XtremeWinners.py

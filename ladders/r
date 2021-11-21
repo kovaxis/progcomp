@@ -1,0 +1,12 @@
+#!/bin/bash
+
+OK=0
+
+if [ "$1" -nt tmp.exe ] || [ "$2" = "f" ]
+then
+    echo "compiling..." >&2
+    g++ -std=c++11 -o tmp.exe "$1"
+    OK=$?
+fi
+
+(exit $OK) && echo "running..." >&2 && ./tmp.exe
