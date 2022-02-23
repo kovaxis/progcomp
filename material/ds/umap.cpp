@@ -31,16 +31,67 @@ using umap = unordered_map<T, U, Hash>;
 template <class T>
 using uset = unordered_set<T, Hash>;
 
+// an unordered map with small integer keys that avoids hashing, but allows O(N)
+// iteration and clearing, with N being the amount of items (not the maximum
+// key).
+template <class T>
+struct Map {
+    int N;
+    vector<bool> used;
+    vector<int> keys;
+    vector<T> vals;
+
+    Map() {}
+    // O(C)
+    void resize(int C) {
+        C += 1, used.resize(C), keys.resize(C), vals.resize(C);
+    }
+
+    // O(1)
+    T& operator[](int k) {
+        if (!used[k]) used[k] = true, keys[N++] = k, vals[k] = T();
+        return vals[k];
+    }
+
+    // O(N)
+    void clear() {
+        while (N) used[keys[--N]] = false;
+    }
+
+    // O(N)
+    template <class OP>
+    void iterate(OP op) {
+        rep(i, N) op(keys[i], vals[keys[i]]);
+    }
+};
+
 #ifndef NOMAIN_UMAP
 
 int main() {
     umap<int, int> umap;
-
     umap.insert({3, 5});
     umap.insert({-4, 10});
+    cout << endl;
     cout << "3: " << umap[3] << endl;
     cout << "-5: " << umap[-5] << endl;
     cout << "-4: " << umap[-4] << endl;
+
+    Map<string> xmap;
+    xmap.resize(100);
+    xmap[0] = "hello";
+    xmap[50] = "there";
+    xmap[100] = "world";
+    cout << endl;
+    cout << "0: '" << xmap[0] << "'" << endl;
+    cout << "1: '" << xmap[1] << "'" << endl;
+    cout << "40: '" << xmap[40] << "'" << endl;
+    cout << "50: '" << xmap[50] << "'" << endl;
+    cout << "100: '" << xmap[100] << "'" << endl;
+    cout << "iteration:" << endl;
+    xmap.iterate([&](int k, string& v) {
+        cout << "  " << k << " = '" << v << "'" << endl;
+    });
+    cout << endl;
 }
 
 #endif

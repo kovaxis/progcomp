@@ -23,3 +23,12 @@ Rational root theorem
 
     Note that if a0 = 0, then x = 0 is a root, the polynomial can be divided by x and the theorem
     applies once again.
+
+Legendre's formula
+
+    Considering a prime p, the largest power p^k that divides n! is given by:
+    
+    k = floor(n/p) + floor(n/p^2) + floor(n/p^3) + ...
+
+    O(log n / log p)
+

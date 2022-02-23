@@ -1,6 +1,8 @@
 
 #include "../common.h"
 
+// compute substring hashes in O(1).
+// hashes are compatible between different strings.
 struct Hash {
     ll HMOD;
     int N;
@@ -8,6 +10,7 @@ struct Hash {
     vector<int> p;
 
     Hash() {}
+    // O(N)
     Hash(const string& s, ll HMOD_ = 1000003931)
         : N(s.size() + 1), HMOD(HMOD_), p(N), h(N) {
         static const ll P =
@@ -17,6 +20,7 @@ struct Hash {
         rep(i, N - 1) h[i + 1] = (h[i] + (ll)s[i] * p[i]) % HMOD;
     }
 
+    // O(1)
     pair<ll, int> get(int i, int j) { return {(h[j] - h[i] + HMOD) % HMOD, i}; }
 
     bool cmp(pair<ll, int> x0, pair<ll, int> x1) {
@@ -27,15 +31,19 @@ struct Hash {
     }
 };
 
+// compute hashes in multiple prime modulos simultaneously, to reduce the chance
+// of collisions.
 struct HashM {
     int N;
     vector<Hash> sub;
 
     HashM() {}
+    // O(K N)
     HashM(const string& s, const vector<ll>& mods) : N(mods.size()), sub(N) {
         rep(i, N) sub[i] = Hash(s, mods[i]);
     }
 
+    // O(K)
     vector<pair<ll, int>> get(int i, int j) {
         vector<pair<ll, int>> hs(N);
         rep(k, N) hs[k] = sub[k].get(i, j);
