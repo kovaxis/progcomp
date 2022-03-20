@@ -63,7 +63,7 @@ void factorize(vector<pair<ll, int>>& facts, ll x) {
 
 // iterate over all divisors of a number.
 //
-// divisor count upper bound: n^(1.07 / ln(ln n))
+// divisor count upper bound: n^(1.07 / ln ln n)
 template <class OP>
 void divisors(ll x, OP op) {
     vector<pair<ll, int>> facts;

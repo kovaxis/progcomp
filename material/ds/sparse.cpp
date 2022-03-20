@@ -7,8 +7,9 @@ struct Sparse {
 
     Sparse() {}
 
-    void resize(int N) { st = {vector<T>(N)}; }
+    void reset(int N) { st = {vector<T>(N)}; }
     void set(int i, T val) { st[0][i] = val; }
+
     // O(N log N) time
     // O(N log N) memory
     void init() {
@@ -37,7 +38,7 @@ void query(int l, int r, int ex) {
 }
 
 int main() {
-    st.resize(100000);
+    st.reset(100000);
     rep(i, 100000) st.set(i, 7 * i % 11);
     rep(i, 20) cerr << st.query(i, i + 1) << " \n"[i == 19];
     st.init();

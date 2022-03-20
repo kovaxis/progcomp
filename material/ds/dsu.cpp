@@ -5,7 +5,7 @@ struct Dsu {
 
     Dsu() {}
     // initialize the disjoint-set-union to all unitary sets
-    void resize(int N) {
+    void reset(int N) {
         p.resize(N), r.assign(N, 0);
         rep(i, N) p[i] = i;
     }
