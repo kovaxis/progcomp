@@ -1,0 +1,13 @@
+- Hungarian
+
+- Dial
+- FFT
+- Dinic
+- Aho-Corasick
+- Divide and Conquer DP
+- Treap
+- Fibonacci properties
+- Negative cycles
+- Primality tests
+- Hopcroft-Karp matching
+- Dynamic connectivity
