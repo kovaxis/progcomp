@@ -27,7 +27,7 @@ ll multinv(ll a, ll M) { return binexp(a, M - 2, M); }
 //
 // time: O(log min(a, b))
 // (ignoring complexity of arithmetic)
-ll ext_gcd(ll a, ll b, ll& x, ll& y) {
+ll ext_gcd(ll a, ll b, ll &x, ll &y) {
     if (b == 0) {
         x = 1, y = 0;
         return a;
@@ -67,7 +67,7 @@ ll eulerphi(ll x) {
 }
 
 // N choose K but modular, using a precomputed factorial table.
-ll choose(ll* fact, ll n, ll k, ll M) {
+ll choose(ll *fact, ll n, ll k, ll M) {
     return fact[n] * multinv(fact[k] * fact[n - k] % M, M) % M;
 }
 
@@ -107,7 +107,7 @@ ll dlog(ll a, ll b, ll M) {
     }
 
     ll aN = binexp(a, N, M), aNp = k;
-    rep(p, 1, N + 1) {
+    repx(p, 1, N + 1) {
         aNp = aNp * aN % M;
         if (r.count(aNp)) return N * p - r[aNp] + s;
     }
@@ -124,13 +124,13 @@ int main() {
         auto test = [&](int x) {
             int phi = eulerphi(x);
             int phi2 = 0;
-            rep(k, 1, x + 1) phi2 += (__gcd(x, k) == 1);
+            repx(k, 1, x + 1) phi2 += (__gcd(x, k) == 1);
             if (phi != phi2) {
                 cerr << "fastphi(" << x << ") = " << phi << " != phi(" << x
                      << ") = " << phi2 << endl;
             }
         };
-        rep(x, 1, 5000) test(x);
+        repx(x, 1, 5000) test(x);
         rep(i, 1000) test(random_ll(5000, 100000));
         rep(i, 10) test(random_ll(100000, 10000000));
         cout << "all ok" << endl;

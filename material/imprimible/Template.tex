@@ -1,0 +1,71 @@
+% run the command ' lualatex -shell-escape Reference.tex ' twice in the terminal to visualize table of contents
+\documentclass[twoside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{multicol}
+\usepackage{minted}
+\usepackage{python}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{pdfpages}
+\usepackage{needspace}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{afterpage}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage[inline]{enumitem}
+\usepackage{fontspec}
+\usepackage{ulem}
+\usepackage[explicit]{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\geometry{letterpaper, portrait, left=0.5cm, right=0.5cm, top=1.8cm, bottom=1cm}
+\setminted{
+    style=tango,
+    breaklines=true,
+    breakanywhere=true
+}
+
+\setlength{\headsep}{0.5cm}
+\setlength{\columnsep}{0.5cm}
+\setlength{\columnseprule}{0.01cm}
+\renewcommand{\columnseprulecolor}{\color{gray}}
+
+\pagestyle{fancy}
+\pagenumbering{arabic}
+\fancyhead{}
+\fancyfoot{}
+\fancyhead[LO,RE]{\textsf{First, solve the problem. Then, write the code.}}
+\fancyhead[LE,RO]{\textsf{\leftmark}}
+\fancyfoot[LE,RO]{\textbf{\textsf{\thepage}}}
+
+\renewcommand{\headrulewidth}{0.01cm}
+\renewcommand{\footrulewidth}{0.01cm}
+
+\setlength{\parindent}{0em}
+% column space
+\setlength{\tabcolsep}{10pt} % Default value: 6pt
+% upper and lower padding
+\renewcommand{\arraystretch}{1.5} % Default value: 1
+
+\setmainfont{Montserrat}
+\setcounter{tocdepth}{5}
+
+\titleformat{\section}{\Huge\bfseries\centering}{\thesection}{1em}{#1}[\vspace{2em}]
+\titleformat{\subsection}{\huge\bfseries\centering}{\thesubsection}{1em}{#1}
+\titleformat{\subsubsection}{\LARGE\bfseries\centering}{\thesubsubsection}{1em}{#1}
+\titleformat{\paragraph}{\Large\bfseries\centering}{\theparagraph}{1em}{#1}
+\titleformat{\subparagraph}{\large\bfseries\centering}{\thesubparagraph}{1em}{#1}
+\titleformat{\mkcprfile}{\normalsize\bfseries}{\themkcprfile}{1em}{\uline{#1}}
+
+\begin{document}
+%\begin{multicols*}{2}
+%    \tableofcontents
+%\end{multicols*}
+\scriptsize
+CODE HERE
+\end{document}

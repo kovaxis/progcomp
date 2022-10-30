@@ -16,23 +16,22 @@ void floyd(const vector<vector<pair<int, ll>>>& G, vector<vector<ll>>& dists) {
 
 // calculate shortest distances from a source node to every other node in
 // O(m log n). requires an array of size N to store results.
-void dijkstra(const vector<vector<pair<int, ll>>>& G, vector<ll>& dists,
-              int src) {
-    dists.assign(G.size(), INF);
-    dists[src] = 0;
+void dijkstra(const vector<vector<pair<int, ll>>>& G, vector<ll>& D, int src) {
+    D.assign(G.size(), INF);
+    D[src] = 0;
     priority_queue<pair<ll, int>> q;
     q.push({0, src});
     while (!q.empty()) {
-        ll d = q.top().first;
-        int v = q.top().second;
+        ll d = -q.top().first;
+        int u = q.top().second;
         q.pop();
-        if (d > dists[v]) continue;
-        for (auto edge : G[v]) {
-            int to = edge.first;
-            ll w = edge.second;
-            if (d + w < dists[to]) {
-                dists[to] = d + w;
-                q.push({dists[to], to});
+        if (d > D[u]) continue;
+        for (auto e : G[u]) {
+            int v = e.first;
+            ll w = e.second;
+            if (d + w < D[v]) {
+                D[v] = d + w;
+                q.push({-D[v], v});
             }
         }
     }

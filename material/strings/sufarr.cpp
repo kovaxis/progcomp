@@ -7,9 +7,9 @@ vector<int> suffixarray(const string& s) {
     int N = s.size() + 1;  // optional: include terminating NUL
     vector<int> p(N), p2(N), c(N), c2(N), cnt(256);
     rep(i, N) cnt[s[i]] += 1;
-    rep(b, 1, 256) cnt[b] += cnt[b - 1];
+    repx(b, 1, 256) cnt[b] += cnt[b - 1];
     rep(i, N) p[--cnt[s[i]]] = i;
-    rep(i, 1, N) c[p[i]] = c[p[i - 1]] + (s[p[i]] != s[p[i - 1]]);
+    repx(i, 1, N) c[p[i]] = c[p[i - 1]] + (s[p[i]] != s[p[i - 1]]);
     for (int k = 1; k < N; k <<= 1) {
         int C = c[p[N - 1]] + 1;
         cnt.assign(C + 1, 0);
@@ -18,7 +18,7 @@ vector<int> suffixarray(const string& s) {
         rep(i, C) cnt[i + 1] += cnt[i];
         rep(i, N) p2[cnt[c[p[i]]]++] = p[i];
         c2[p2[0]] = 0;
-        rep(i, 1, N) c2[p2[i]] =
+        repx(i, 1, N) c2[p2[i]] =
             c2[p2[i - 1]] + (c[p2[i]] != c[p2[i - 1]] ||
                              c[(p2[i] + k) % N] != c[(p2[i - 1] + k) % N]);
         swap(c, c2), swap(p, p2);

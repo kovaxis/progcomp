@@ -1,0 +1,17 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c+cp}{\PYGZsh{}pragma GCC optimize(\PYGZdq{}Ofast\PYGZdq{})}
+\PYG{c+cp}{\PYGZsh{}include}\PYG{+w}{ }\PYG{c+cpf}{\PYGZlt{}bits/stdc++.h\PYGZgt{}}
+\PYG{k}{using}\PYG{+w}{ }\PYG{k}{namespace}\PYG{+w}{ }\PYG{n+nn}{std}\PYG{p}{;}
+
+\PYG{k}{typedef}\PYG{+w}{ }\PYG{k+kt}{long}\PYG{+w}{ }\PYG{k+kt}{long}\PYG{+w}{ }\PYG{n}{ll}\PYG{p}{;}
+
+\PYG{c+cp}{\PYGZsh{}define repx(i, a, b) for (int i = a; i \PYGZlt{} b; i++)}
+\PYG{c+cp}{\PYGZsh{}define rep(i, n) repx(i, 0, n)}
+\PYG{c+cp}{\PYGZsh{}define invrepx(i, a, b) for (int i = b \PYGZhy{} 1; i \PYGZgt{}= a; i\PYGZhy{}\PYGZhy{})}
+\PYG{c+cp}{\PYGZsh{}define invrep(i, n) invrepx(i, 0, n)}
+
+\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n+nf}{main}\PYG{p}{()}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{n}{ios}\PYG{o}{::}\PYG{n}{sync\PYGZus{}with\PYGZus{}stdio}\PYG{p}{(}\PYG{n+nb}{false}\PYG{p}{);}
+\PYG{+w}{    }\PYG{n}{cin}\PYG{p}{.}\PYG{n}{tie}\PYG{p}{(}\PYG{n+nb}{NULL}\PYG{p}{);}
+\PYG{p}{\PYGZcb{}}
+\end{Verbatim}

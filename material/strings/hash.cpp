@@ -69,8 +69,8 @@ int main() {
     //   01234567890123456789012
     string s = "abracadabra abracadabra";
     HashM h(s, HMOD);
-    rep(i0, s.size() + 1) rep(j0, i0, s.size() + 1) rep(i1, s.size() + 1)
-        rep(j1, i1, s.size() + 1) {
+    rep(i0, s.size() + 1) repx(j0, i0, s.size() + 1) rep(i1, s.size() + 1)
+        repx(j1, i1, s.size() + 1) {
         bool eq = h.cmp(h.get(i0, j0), h.get(i1, j1));
         bool eq2 = s.substr(i0, j0 - i0) == s.substr(i1, j1 - i1);
         if (eq != eq2) {

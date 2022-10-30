@@ -9,7 +9,7 @@
 // if the equations cannot be satisfied, {-1, -1} is returned.
 pair<bigint, bigint> solve_crt_big(const vector<pair<ll, ll>>& eqs) {
     bigint a0 = eqs[0].first, p0 = eqs[0].second;
-    rep(i, 1, eqs.size()) {
+    repx(i, 1, eqs.size()) {
         bigint a1 = eqs[i].first, p1 = eqs[i].second;
         bigint k1, k0;
         bigint d = ext_gcd(p1, p0, k1, k0);
@@ -34,7 +34,7 @@ ll ext_gcd_small(ll a, ll b, ll& x, ll& y) {
 
 pair<ll, ll> solve_crt(const vector<pair<ll, ll>>& eqs) {
     ll a0 = eqs[0].first, p0 = eqs[0].second;
-    rep(i, 1, eqs.size()) {
+    repx(i, 1, eqs.size()) {
         ll a1 = eqs[i].first, p1 = eqs[i].second;
         ll k1, k0;
         ll d = ext_gcd(p1, p0, k1, k0);

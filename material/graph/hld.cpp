@@ -7,7 +7,7 @@ struct Hld {
     vector<int> parent, heavy, depth, pos, top;
 
     Hld() {}
-    void init(vector<vector<int>>& G) {
+    void init(vector<vector<int>> &G) {
         int N = G.size();
         parent.resize(N), heavy.resize(N), depth.resize(N), pos.resize(N),
             top.resize(N);
@@ -22,7 +22,7 @@ struct Hld {
         }
     }
 
-    int dfs(vector<vector<int>>& G, int i) {
+    int dfs(vector<vector<int>> &G, int i) {
         int w = 1, mw = 0;
         depth[i] = depth[parent[i]] + 1, heavy[i] = -1;
         for (int c : G[i]) {
@@ -43,26 +43,26 @@ struct Hld {
             v = parent[top[v]];
         }
         if (depth[u] > depth[v]) swap(u, v);
-        op(pos[u], pos[v]);  // value on vertex
+        op(pos[u], pos[v]); // value on vertex
         // op(pos[u]+1, pos[v]); // value on path
     }
 
     // segment tree
     template <class T, class S>
-    void update(S& seg, int i, T val) {
+    void update(S &seg, int i, T val) {
         seg.update(pos[i], val);
     }
 
     // segment tree lazy
     template <class T, class S>
-    void update(S& seg, int u, int v, T val) {
-        path(u, v, [&](int l, int r) { seg.update(l, r, val); });
+    void update(S &seg, int u, int v, T val) {
+        path(u, v, [&](int l, int r) { seg.update(l, r + 1, val); });
     }
 
     template <class T, class S>
-    T query(S& seg, int u, int v) {
-        T ans = 0;
-        path(u, v, [&](int l, int r) { ans += seg.query(l, r); });  // query op
+    T query(S &seg, int u, int v) {
+        T ans = 0;                                                     // neutral element
+        path(u, v, [&](int l, int r) { ans += seg.query(l, r + 1); }); // query op
         return ans;
     }
 };
@@ -70,7 +70,7 @@ struct Hld {
 #ifndef NOMAIN_HLD
 
 Hld hld;
-Stl<ll> seg;
+StlSumSum<ll> seg;
 
 void que(int u, int v, ll ex) {
     ll out = hld.query<ll>(seg, u - 1, v - 1);
@@ -90,9 +90,7 @@ void upd(int u, int v, int val) {
 
 int main() {
     vector<pair<int, int>> conns = {
-        {1, 2},   {1, 3},   {1, 4},  {2, 12}, {12, 13}, {12, 14},
-        {14, 15}, {3, 5},   {3, 6},  {6, 7},  {7, 8},   {8, 9},
-        {8, 10},  {10, 11}, {8, 18}, {4, 16}, {4, 17}};
+        {1, 2}, {1, 3}, {1, 4}, {2, 12}, {12, 13}, {12, 14}, {14, 15}, {3, 5}, {3, 6}, {6, 7}, {7, 8}, {8, 9}, {8, 10}, {10, 11}, {8, 18}, {4, 16}, {4, 17}};
     vector<vector<int>> G(18);
     for (auto edge : conns) {
         G[edge.first - 1].push_back(edge.second - 1);
@@ -115,7 +113,7 @@ int main() {
     //          |
     //         11
     hld.init(G);
-    seg.resize(G.size());
+    seg.reset(G.size());
     que(11, 5, 0);
     que(13, 12, 0);
     que(8, 8, 0);

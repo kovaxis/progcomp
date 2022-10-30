@@ -70,7 +70,7 @@ struct bigint {
             u64 c = 0;
             int ls = digits.size();
             int rs = lhs.digits.size();
-            rep(i, j, max(ls, rs + j)) {
+            repx(i, j, max(ls, rs + j)) {
                 if (i >= ls) digits.push_back(0);
                 u64 r =
                     (u64)digits[i] +

@@ -1,0 +1,36 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+
+\PYG{n}{Burnside}\PYG{+w}{ }\PYG{n}{lemma}
+
+\PYG{+w}{    }\PYG{n}{For}\PYG{+w}{ }\PYG{n}{a}\PYG{+w}{ }\PYG{n}{set}\PYG{+w}{ }\PYG{n}{X}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{with}\PYG{+w}{ }\PYG{n}{members}\PYG{+w}{ }\PYG{n}{x}\PYG{+w}{ }\PYG{n}{in}\PYG{+w}{ }\PYG{n}{X}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{and}\PYG{+w}{ }\PYG{n}{a}\PYG{+w}{ }\PYG{n}{group}\PYG{+w}{ }\PYG{n}{G}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{with}\PYG{+w}{ }\PYG{n}{operations}\PYG{+w}{ }\PYG{n}{g}\PYG{+w}{ }\PYG{n}{in}\PYG{+w}{ }\PYG{n}{G}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{where}\PYG{+w}{ }\PYG{n}{g}\PYG{p}{(}\PYG{n}{x}\PYG{p}{)}\PYG{o}{:}\PYG{+w}{ }\PYG{n}{X}\PYG{+w}{ }\PYG{o}{\PYGZhy{}\PYGZgt{}}\PYG{+w}{ }\PYG{n}{X}\PYG{p}{.}
+\PYG{+w}{    }\PYG{n}{F\PYGZus{}g}\PYG{+w}{ }\PYG{n}{is}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{set}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{x}\PYG{+w}{ }\PYG{n}{which}\PYG{+w}{ }\PYG{n}{are}\PYG{+w}{ }\PYG{n}{fixed}\PYG{+w}{ }\PYG{n}{points}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{g}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{ie}\PYG{p}{.}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{+w}{ }\PYG{n}{x}\PYG{+w}{ }\PYG{n}{in}\PYG{+w}{ }\PYG{n}{X}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{n}{g}\PYG{p}{(}\PYG{n}{x}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{x}\PYG{+w}{ }\PYG{p}{\PYGZcb{}).}
+\PYG{+w}{    }\PYG{n}{The}\PYG{+w}{ }\PYG{n}{number}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{orbits}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{connected}\PYG{+w}{ }\PYG{n}{components}\PYG{+w}{ }\PYG{n}{in}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{graph}\PYG{+w}{ }\PYG{n}{formed}\PYG{+w}{ }\PYG{n}{by}\PYG{+w}{ }\PYG{n}{assigning}\PYG{+w}{ }\PYG{n}{each}\PYG{+w}{ }\PYG{n}{x}\PYG{+w}{ }\PYG{n}{a}\PYG{+w}{ }\PYG{n}{node}\PYG{+w}{ }\PYG{n}{and}
+\PYG{+w}{    }\PYG{n}{a}\PYG{+w}{ }\PYG{n}{directed}\PYG{+w}{ }\PYG{n}{edge}\PYG{+w}{ }\PYG{n}{between}\PYG{+w}{ }\PYG{n}{x}\PYG{+w}{ }\PYG{n}{and}\PYG{+w}{ }\PYG{n}{g}\PYG{p}{(}\PYG{n}{x}\PYG{p}{)}\PYG{+w}{ }\PYG{k}{for}\PYG{+w}{ }\PYG{n}{every}\PYG{+w}{ }\PYG{n}{g}\PYG{p}{)}\PYG{+w}{ }\PYG{n}{is}\PYG{+w}{ }\PYG{n}{called}\PYG{+w}{ }\PYG{n}{M}\PYG{p}{.}
+\PYG{+w}{    }\PYG{n}{M}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{average}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{fixed}\PYG{+w}{ }\PYG{n}{points}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{all}\PYG{+w}{ }\PYG{n}{g}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{(}\PYG{o}{|}\PYG{n}{F\PYGZus{}g1}\PYG{o}{|}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{o}{|}\PYG{n}{F\PYGZus{}g2}\PYG{o}{|}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{p}{...}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{o}{|}\PYG{n}{F\PYGZus{}gn}\PYG{o}{|}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{o}{|}\PYG{n}{G}\PYG{o}{|}
+
+\PYG{+w}{    }\PYG{n}{If}\PYG{+w}{ }\PYG{n}{x}\PYG{+w}{ }\PYG{n}{are}\PYG{+w}{ }\PYG{n}{images}\PYG{+w}{ }\PYG{n}{and}\PYG{+w}{ }\PYG{n}{g}\PYG{+w}{ }\PYG{n}{are}\PYG{+w}{ }\PYG{n}{simmetries}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{then}\PYG{+w}{ }\PYG{n}{M}\PYG{+w}{ }\PYG{n}{corresponds}\PYG{+w}{ }\PYG{n}{to}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{amount}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{objects}\PYG{p}{,}\PYG{+w}{ }\PYG{o}{|}\PYG{n}{G}\PYG{o}{|}
+\PYG{+w}{    }\PYG{n}{corresponds}\PYG{+w}{ }\PYG{n}{to}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{amount}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{simmetries}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{and}\PYG{+w}{ }\PYG{n}{F\PYGZus{}g}\PYG{+w}{ }\PYG{n}{corresponds}\PYG{+w}{ }\PYG{n}{to}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{amount}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{simmetrical}
+\PYG{+w}{    }\PYG{n}{images}\PYG{+w}{ }\PYG{n}{under}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{simmetry}\PYG{+w}{ }\PYG{n}{g}\PYG{p}{.}
+
+\PYG{n}{Rational}\PYG{+w}{ }\PYG{n}{root}\PYG{+w}{ }\PYG{n}{theorem}
+
+\PYG{+w}{    }\PYG{n}{All}\PYG{+w}{ }\PYG{n}{rational}\PYG{+w}{ }\PYG{n}{roots}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{polynomials}\PYG{+w}{ }\PYG{n}{with}\PYG{+w}{ }\PYG{n}{integer}\PYG{+w}{ }\PYG{n+nl}{coefficients}\PYG{p}{:}
+
+\PYG{+w}{    }\PYG{n}{a0}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{x}\PYG{o}{\PYGZca{}}\PYG{l+m+mi}{0}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{a1}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{x}\PYG{o}{\PYGZca{}}\PYG{l+m+mi}{1}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{a2}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{x}\PYG{o}{\PYGZca{}}\PYG{l+m+mi}{2}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{p}{...}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{an}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{x}\PYG{o}{\PYGZca{}}\PYG{n}{n}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}
+
+\PYG{+w}{    }\PYG{n}{If}\PYG{+w}{ }\PYG{n}{these}\PYG{+w}{ }\PYG{n}{roots}\PYG{+w}{ }\PYG{n}{are}\PYG{+w}{ }\PYG{n}{represented}\PYG{+w}{ }\PYG{n}{as}\PYG{+w}{ }\PYG{n}{p}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{n}{q}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{with}\PYG{+w}{ }\PYG{n}{p}\PYG{+w}{ }\PYG{n}{and}\PYG{+w}{ }\PYG{n}{q}\PYG{+w}{ }\PYG{n}{coprime}\PYG{p}{,}
+\PYG{+w}{    }\PYG{o}{\PYGZhy{}}\PYG{+w}{ }\PYG{n}{p}\PYG{+w}{ }\PYG{n}{is}\PYG{+w}{ }\PYG{n}{an}\PYG{+w}{ }\PYG{n}{integer}\PYG{+w}{ }\PYG{n}{factor}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{a0}
+\PYG{+w}{    }\PYG{o}{\PYGZhy{}}\PYG{+w}{ }\PYG{n}{q}\PYG{+w}{ }\PYG{n}{is}\PYG{+w}{ }\PYG{n}{an}\PYG{+w}{ }\PYG{n}{integer}\PYG{+w}{ }\PYG{n}{factor}\PYG{+w}{ }\PYG{n}{of}\PYG{+w}{ }\PYG{n}{an}
+
+\PYG{+w}{    }\PYG{n}{Note}\PYG{+w}{ }\PYG{n}{that}\PYG{+w}{ }\PYG{k}{if}\PYG{+w}{ }\PYG{n}{a0}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{then}\PYG{+w}{ }\PYG{n}{x}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{+w}{ }\PYG{n}{is}\PYG{+w}{ }\PYG{n}{a}\PYG{+w}{ }\PYG{n}{root}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{polynomial}\PYG{+w}{ }\PYG{n}{can}\PYG{+w}{ }\PYG{n}{be}\PYG{+w}{ }\PYG{n}{divided}\PYG{+w}{ }\PYG{n}{by}\PYG{+w}{ }\PYG{n}{x}\PYG{+w}{ }\PYG{n}{and}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{theorem}
+\PYG{+w}{    }\PYG{n}{applies}\PYG{+w}{ }\PYG{n}{once}\PYG{+w}{ }\PYG{n}{again}\PYG{p}{.}
+
+\PYG{n}{Legendres}\PYG{+w}{ }\PYG{n}{formula}
+
+\PYG{+w}{    }\PYG{n}{Considering}\PYG{+w}{ }\PYG{n}{a}\PYG{+w}{ }\PYG{n}{prime}\PYG{+w}{ }\PYG{n}{p}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{the}\PYG{+w}{ }\PYG{n}{largest}\PYG{+w}{ }\PYG{n}{power}\PYG{+w}{ }\PYG{n}{p}\PYG{o}{\PYGZca{}}\PYG{n}{k}\PYG{+w}{ }\PYG{n}{that}\PYG{+w}{ }\PYG{n}{divides}\PYG{+w}{ }\PYG{n}{n}\PYG{o}{!}\PYG{+w}{ }\PYG{n}{is}\PYG{+w}{ }\PYG{n}{given}\PYG{+w}{ }\PYG{n+nl}{by}\PYG{p}{:}
+
+\PYG{+w}{    }\PYG{n}{k}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{floor}\PYG{p}{(}\PYG{n}{n}\PYG{o}{/}\PYG{n}{p}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{floor}\PYG{p}{(}\PYG{n}{n}\PYG{o}{/}\PYG{n}{p}\PYG{o}{\PYGZca{}}\PYG{l+m+mi}{2}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{floor}\PYG{p}{(}\PYG{n}{n}\PYG{o}{/}\PYG{n}{p}\PYG{o}{\PYGZca{}}\PYG{l+m+mi}{3}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{p}{...}
+
+\PYG{+w}{    }\PYG{n}{O}\PYG{p}{(}\PYG{n}{log}\PYG{+w}{ }\PYG{n}{n}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{n}{log}\PYG{+w}{ }\PYG{n}{p}\PYG{p}{)}
+
+\end{Verbatim}

@@ -22,7 +22,7 @@ struct Hash2d {
         p[0] = 1;
         rep(i, W * H - 1) p[i + 1] = p[i] * P % HMOD;
         h.assign(W * H, 0);
-        rep(y, 1, H) rep(x, 1, W) {
+        repx(y, 1, H) repx(x, 1, W) {
             ll c = (ll)s[(y - 1) * (W - 1) + x - 1] * p[y * W + x] % HMOD;
             h[y * W + x] = (HMOD + h[y * W + x - 1] + h[(y - 1) * W + x] -
                             h[(y - 1) * W + x - 1] + c) %

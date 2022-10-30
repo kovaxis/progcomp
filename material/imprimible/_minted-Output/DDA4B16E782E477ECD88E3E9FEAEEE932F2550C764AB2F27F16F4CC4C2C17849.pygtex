@@ -1,0 +1,30 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{struct} \PYG{n+nc}{Query}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{l}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{r}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{idx}\PYG{p}{;}
+\PYG{p}{\PYGZcb{};}
+
+\PYG{c+c1}{// answer segment queries using only `add(i)`, `remove(i)` and `get()`}
+\PYG{c+c1}{// functions.}
+\PYG{c+c1}{//}
+\PYG{c+c1}{// complexity: O((N + Q) * sqrt(N) * F)}
+\PYG{c+c1}{//   N = length of the full segment}
+\PYG{c+c1}{//   Q = amount of queries}
+\PYG{c+c1}{//   F = complexity of the `add`, `remove` functions}
+\PYG{k}{template}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{k}{class} \PYG{n+nc}{A}\PYG{p}{,}\PYG{+w}{ }\PYG{k}{class} \PYG{n+nc}{R}\PYG{p}{,}\PYG{+w}{ }\PYG{k}{class} \PYG{n+nc}{G}\PYG{p}{,}\PYG{+w}{ }\PYG{k}{class} \PYG{n+nc}{T}\PYG{o}{\PYGZgt{}}
+\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n}{mo}\PYG{p}{(}\PYG{n}{vector}\PYG{o}{\PYGZlt{}}\PYG{n}{Query}\PYG{o}{\PYGZgt{}\PYGZam{}}\PYG{+w}{ }\PYG{n}{queries}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{vector}\PYG{o}{\PYGZlt{}}\PYG{n}{T}\PYG{o}{\PYGZgt{}\PYGZam{}}\PYG{+w}{ }\PYG{n}{ans}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{A}\PYG{+w}{ }\PYG{n}{add}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{R}\PYG{+w}{ }\PYG{n}{remove}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{G}\PYG{+w}{ }\PYG{n}{get}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{Q}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{queries}\PYG{p}{.}\PYG{n}{size}\PYG{p}{(),}\PYG{+w}{ }\PYG{n}{B}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{(}\PYG{k+kt}{int}\PYG{p}{)}\PYG{n}{sqrt}\PYG{p}{(}\PYG{n}{Q}\PYG{p}{);}
+\PYG{+w}{    }\PYG{n}{sort}\PYG{p}{(}\PYG{n}{queries}\PYG{p}{.}\PYG{n}{begin}\PYG{p}{(),}\PYG{+w}{ }\PYG{n}{queries}\PYG{p}{.}\PYG{n}{end}\PYG{p}{(),}\PYG{+w}{ }\PYG{p}{[}\PYG{o}{\PYGZam{}}\PYG{p}{](}\PYG{n}{Query}\PYG{o}{\PYGZam{}}\PYG{+w}{ }\PYG{n}{a}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{Query}\PYG{o}{\PYGZam{}}\PYG{+w}{ }\PYG{n}{b}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{        }\PYG{k}{return}\PYG{+w}{ }\PYG{n}{make\PYGZus{}pair}\PYG{p}{(}\PYG{n}{a}\PYG{p}{.}\PYG{n}{l}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{n}{B}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{a}\PYG{p}{.}\PYG{n}{r}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{n}{make\PYGZus{}pair}\PYG{p}{(}\PYG{n}{b}\PYG{p}{.}\PYG{n}{l}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{n}{B}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{b}\PYG{p}{.}\PYG{n}{r}\PYG{p}{);}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{});}
+\PYG{+w}{    }\PYG{n}{ans}\PYG{p}{.}\PYG{n}{resize}\PYG{p}{(}\PYG{n}{Q}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{l}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{r}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k}{for}\PYG{+w}{ }\PYG{p}{(}\PYG{k}{auto}\PYG{o}{\PYGZam{}}\PYG{+w}{ }\PYG{n+nl}{q} \PYG{p}{:}\PYG{+w}{ }\PYG{n}{queries}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{        }\PYG{k}{while}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{r}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{n}{q}\PYG{p}{.}\PYG{n}{r}\PYG{p}{)}\PYG{+w}{ }\PYG{n}{add}\PYG{p}{(}\PYG{n}{r}\PYG{p}{),}\PYG{+w}{ }\PYG{n}{r}\PYG{o}{++}\PYG{p}{;}
+\PYG{+w}{        }\PYG{k}{while}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{l}\PYG{+w}{ }\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{n}{q}\PYG{p}{.}\PYG{n}{l}\PYG{p}{)}\PYG{+w}{ }\PYG{n}{l}\PYG{o}{\PYGZhy{}\PYGZhy{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{add}\PYG{p}{(}\PYG{n}{l}\PYG{p}{);}
+\PYG{+w}{        }\PYG{k}{while}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{r}\PYG{+w}{ }\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{n}{q}\PYG{p}{.}\PYG{n}{r}\PYG{p}{)}\PYG{+w}{ }\PYG{n}{r}\PYG{o}{\PYGZhy{}\PYGZhy{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{remove}\PYG{p}{(}\PYG{n}{r}\PYG{p}{);}
+\PYG{+w}{        }\PYG{k}{while}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{l}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{n}{q}\PYG{p}{.}\PYG{n}{l}\PYG{p}{)}\PYG{+w}{ }\PYG{n}{remove}\PYG{p}{(}\PYG{n}{l}\PYG{p}{),}\PYG{+w}{ }\PYG{n}{l}\PYG{o}{++}\PYG{p}{;}
+\PYG{+w}{        }\PYG{n}{ans}\PYG{p}{[}\PYG{n}{q}\PYG{p}{.}\PYG{n}{idx}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{get}\PYG{p}{();}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZcb{}}
+\end{Verbatim}
