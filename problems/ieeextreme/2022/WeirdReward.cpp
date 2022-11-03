@@ -9,7 +9,7 @@ typedef long long ll;
 #define invrepx(i, a, b) for (int i = b - 1; i >= a; i--)
 #define invrep(i, n) invrepx(i, 0, n)
 
-#define DBG 1
+#define DBG 0
 
 #define cerr \
     if (DBG) cerr
@@ -57,7 +57,7 @@ int parse_muls(int &i) {
     int sub = parse_term(i);
     if (expr[i] == '*') {
         i += 1;
-        int sub2 = parse_term(i);
+        int sub2 = parse_muls(i);
         seminodes.push_back({sub, sub2, OP_MUL, l, i});
         return seminodes.size() - 1;
     }

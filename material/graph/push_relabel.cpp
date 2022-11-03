@@ -2,12 +2,17 @@
 
 const ll INF = 1e18;
 
-struct Flow {
+// maximum flow algorithm.
+// to run, use `maxflow()`.
+//
+// time: O(V^2 sqrt(E)) <= O(V^3)
+// memory: O(V^2)
+struct PushRelabel {
     vector<vector<ll>> cap, flow;
     vector<ll> excess;
     vector<int> height;
 
-    Flow() {}
+    PushRelabel() {}
     void resize(int N) { cap.assign(N, vector<ll>(N)); }
 
     // push as much excess flow as possible from u to v.
@@ -30,9 +35,6 @@ struct Flow {
     // get the maximum flow on the network specified by `cap` with source `s`
     // and sink `t`.
     // node-to-node flows are output to the `flow` member.
-    //
-    // time: O(V^2 sqrt(E)) <= O(V^3)
-    // memory: O(V^2)
     ll maxflow(int s, int t) {
         int N = cap.size(), M;
         flow.assign(N, vector<ll>(N));
