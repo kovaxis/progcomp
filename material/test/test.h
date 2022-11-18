@@ -2,10 +2,7 @@
 #ifndef TEST_H
 #define TEST_H
 
-#include <bits/stdc++.h>
-
-using namespace std;
-using ll = long long;
+#include "../common.h"
 
 static mt19937 testrng(chrono::steady_clock::now().time_since_epoch().count());
 

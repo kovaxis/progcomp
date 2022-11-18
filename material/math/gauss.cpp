@@ -2,14 +2,16 @@
 
 const double EPS = 1e-9;
 
+// solve a system of equations.
 // complexity: O(min(N, M) * N * M)
+//
 // `a` is a list of rows
 // the last value in each row is the result of the equation
 // return values:
 //  0 -> no solutions
 //  1 -> unique solution, stored in `ans`
 // -1 -> infinitely many solutions, one of which is stored in `ans`
-int gauss(vector<vector<double>> a, vector<double>& ans) {
+int gauss(vector<vector<double>> a, vector<double> &ans) {
     int N = a.size(), M = a[0].size() - 1;
 
     vector<int> where(M, -1);
@@ -37,9 +39,3 @@ int gauss(vector<vector<double>> a, vector<double>& ans) {
     rep(i, M) if (where[i] == -1) return -1;
     return 1;
 }
-
-#ifndef NOMAIN_GAUSS
-
-int main() {}
-
-#endif
