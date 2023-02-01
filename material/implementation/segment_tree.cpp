@@ -2,17 +2,18 @@
 
 template <class T>
 struct St3 {
-    vector<T> node;
+    vector<T> a;
 
     T neutral() { return 0; }
     T merge(T l, T r) { return l + r; }
 
-    void reset(int N) { node.assign(4 * N, neutral()); } // node neutral
+    St3() {}
+    St3(int N) : a(4 * N, neutral()) {} // node neutral
 
     // query for range [l, r)
     T query(int l, int r, int v = 1, int vl = 0, int vr = -1) {
-        if (vr == -1) vr = node.size() / 4;
-        if (l <= vl && r >= vr) return node[v]; // item construction
+        if (vr == -1) vr = a.size() / 4;
+        if (l <= vl && r >= vr) return a[v]; // item construction
         int vm = (vl + vr) / 2;
         if (l >= vr || r <= vl) return neutral();                                 // item neutral
         return merge(query(l, r, 2 * v, vl, vm), query(l, r, 2 * v + 1, vm, vr)); // item merge
@@ -20,13 +21,13 @@ struct St3 {
 
     // set element i to val
     void update(int i, T val, int v = 1, int vl = 0, int vr = -1) {
-        if (vr == -1) vr = node.size() / 4;
-        if (vr - vl == 1) node[v] = val; // item update
+        if (vr == -1) vr = a.size() / 4;
+        if (vr - vl == 1) a[v] = val; // item update
         else {
             int vm = (vl + vr) / 2;
             if (i < vm) update(i, val, 2 * v, vl, vm);
             else update(i, val, 2 * v + 1, vm, vr);
-            node[v] = merge(node[2 * v], node[2 * v + 1]); // node merge
+            a[v] = merge(a[2 * v], a[2 * v + 1]); // node merge
         }
     }
 };
