@@ -44,12 +44,44 @@ void fft(vector<cd> &a, bool inv) {
 
 const ll MOD = 7340033, ROOT = 5, ROOTPOW = 1 << 20;
 
+void find_root_of_unity(ll M) {
+    ll c = M - 1, k = 0;
+    while (c % 2 == 0) c /= 2, k += 1;
+
+    // find proper divisors of M - 1
+    vector<int> divs;
+    repx(d, 1, c) {
+        if (d * d > c) break;
+        if (c % d == 0) rep(i, k + 1) divs.push_back(d << i);
+    }
+    rep(i, k) divs.push_back(c << i);
+
+    // find any primitive root of M
+    ll G = -1;
+    repx(g, 2, M) {
+        bool ok = true;
+        for (int d : divs) ok &= (binexp(g, d, M) != 1);
+        if (ok) {
+            G = g;
+            break;
+        }
+    }
+    assert(G != -1);
+
+    ll w = binexp(G, c, M);
+    cerr << M << " = c * 2^k + 1" << endl;
+    cerr << "  c = " << c << endl;
+    cerr << "  k = " << k << endl;
+    cerr << "w^(2^k) == 1" << endl;
+    cerr << "  w = " << w << endl;
+}
+
 // compute the DFT of a power-of-two-length sequence, modulo a special prime
 // number with principal root.
 //
 // the modulus _must_ be a prime number with an Nth root of unity, where N is a
 // power of two. the FFT can only be performed on arrays of size <= N.
-void modfft(vector<ll> &a, bool inv) {
+void ntt(vector<ll> &a, bool inv) {
     int N = a.size(), k = 0;
     assert(N == 1 << __builtin_ctz(N) && N <= ROOTPOW);
     rep(i, N) a[i] = (a[i] % MOD + MOD) % MOD;
@@ -83,9 +115,9 @@ void modfft(vector<ll> &a, bool inv) {
 void convolve(vector<ll> &a, vector<ll> b, int n) {
     n = 1 << (32 - __builtin_clz(2 * n - 1));
     a.resize(n), b.resize(n);
-    modfft(a, false), modfft(b, false);
+    ntt(a, false), ntt(b, false);
     rep(i, n) a[i] *= b[i];
-    modfft(a, true), modfft(b, true);
+    ntt(a, true), ntt(b, true);
 }
 
 using T = ll;
@@ -142,9 +174,9 @@ struct Poly {
         n = 1 << (n <= 1 ? 0 : 32 - __builtin_clz(n - 1));
         vector<T> b = rhs.a;
         a.resize(n), b.resize(n);
-        modfft(a, false), modfft(b, false);       // fft
+        ntt(a, false), ntt(b, false);             // fft
         rep(i, a.size()) a[i] = pmul(a[i], b[i]); // mul
-        modfft(a, true), trim();                  // invfft
+        ntt(a, true), trim();                     // invfft
         return *this;
     }
     Poly inv(int n) const {
@@ -238,6 +270,12 @@ int main() {
     cout << "P(x) = " << p2 << endl;
     cout << "x -> P(x):" << endl;
     rep(i, xs.size()) { cout << "  " << xs[i] << " -> " << ys[i] << endl; }
+
+    cerr << endl;
+    find_root_of_unity(7340033);
+
+    cerr << endl;
+    find_root_of_unity(998244353);
 }
 
 #endif

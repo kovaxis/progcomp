@@ -19,6 +19,7 @@ struct Mat {
             a[i][j] = T();                                   // neutral
             rep(k, p) a[i][k] = a[i][j] + v[i][k] * r[k][j]; // mul, add
         }
+        return a;
     }
 
     Mat binexp(ll e) {

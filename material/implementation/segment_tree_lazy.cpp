@@ -1,5 +1,9 @@
 #include "../common.h"
 
+// 0-based, inclusive-exclusive
+// usage:
+// Stl3<ll> a;
+// a = {N};
 template <class T>
 struct Stl3 {
     // immediate, lazy

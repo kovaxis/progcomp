@@ -1,32 +1,32 @@
 #include "../common.h"
 
 struct Hld {
-    vector<int> parent, heavy, depth, pos, top;
+    vector<int> P, H, D, pos, top;
 
     Hld() {}
     void init(vector<vector<int>> &G) {
         int N = G.size();
-        parent.resize(N), heavy.resize(N), depth.resize(N), pos.resize(N),
+        P.resize(N), H.resize(N), D.resize(N), pos.resize(N),
             top.resize(N);
-        depth[0] = -1, dfs(G, 0);
+        D[0] = -1, dfs(G, 0);
         int t = 0;
-        rep(i, N) if (heavy[parent[i]] != i) {
+        rep(i, N) if (H[P[i]] != i) {
             int j = i;
             while (j != -1) {
                 top[j] = i, pos[j] = t++;
-                j = heavy[j];
+                j = H[j];
             }
         }
     }
 
     int dfs(vector<vector<int>> &G, int i) {
         int w = 1, mw = 0;
-        depth[i] = depth[parent[i]] + 1, heavy[i] = -1;
+        D[i] = D[P[i]] + 1, H[i] = -1;
         for (int c : G[i]) {
-            if (c == parent[i]) continue;
-            parent[c] = i;
+            if (c == P[i]) continue;
+            P[c] = i;
             int sw = dfs(G, c);
-            if (sw > mw) heavy[i] = c, mw = sw;
+            if (sw > mw) H[i] = c, mw = sw;
             w += sw;
         }
         return w;
@@ -35,11 +35,11 @@ struct Hld {
     template <class OP>
     void path(int u, int v, OP op) {
         while (top[u] != top[v]) {
-            if (depth[top[u]] > depth[top[v]]) swap(u, v);
+            if (D[top[u]] > D[top[v]]) swap(u, v);
             op(pos[top[v]], pos[v] + 1);
-            v = parent[top[v]];
+            v = P[top[v]];
         }
-        if (depth[u] > depth[v]) swap(u, v);
+        if (D[u] > D[v]) swap(u, v);
         op(pos[u], pos[v] + 1); // value on vertex
         // op(pos[u]+1, pos[v] + 1); // value on path
     }

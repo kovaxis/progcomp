@@ -4,8 +4,8 @@ ll binexp(ll a, ll e, ll M) {
     assert(e >= 0);
     ll res = 1 % M;
     while (e) {
-        if (e & 1) res = res * a;
-        a = a * a;
+        if (e & 1) res = res * a % M;
+        a = a * a % M;
         e >>= 1;
     }
     return res;

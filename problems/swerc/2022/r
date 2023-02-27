@@ -1,0 +1,5 @@
+#!/bin/bash
+
+g++ -std=c++17 -o tmp "$1.cpp"
+echo "running"
+./tmp
