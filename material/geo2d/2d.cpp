@@ -9,57 +9,57 @@ struct P {
     P(T x_, T y_) : x{x_}, y{y_} {}
     P() : x{0}, y{0} {}
 
-    friend ostream& operator<<(ostream& s, const P& self) {
+    friend ostream &operator<<(ostream &s, const P &self) {
         s << self.x << " " << self.y;
         return s;
     }
-    friend istream& operator>>(istream& s, P& self) {
+    friend istream &operator>>(istream &s, P &self) {
         s >> self.x;
         s >> self.y;
         return s;
     }
 
-    P& operator+=(const P& r) {
+    P &operator+=(const P &r) {
         this->x += r.x;
         this->y += r.y;
         return *this;
     }
-    friend P operator+(P l, const P& r) { return {l.x + r.x, l.y + r.y}; }
+    friend P operator+(P l, const P &r) { return {l.x + r.x, l.y + r.y}; }
 
-    P& operator-=(const P& r) {
+    P &operator-=(const P &r) {
         this->x -= r.x;
         this->y -= r.y;
         return *this;
     }
-    friend P operator-(P l, const P& r) { return {l.x - r.x, l.y - r.y}; }
+    friend P operator-(P l, const P &r) { return {l.x - r.x, l.y - r.y}; }
     P operator-() { return {-this->x, -this->y}; }
 
-    P& operator*=(const T& r) {
+    P &operator*=(const T &r) {
         this->x *= r;
         this->y *= r;
         return *this;
     }
-    friend P operator*(P l, const T& r) { return {l.x * r, l.y * r}; }
-    friend P operator*(const T& l, P r) { return {l * r.x, l * r.y}; }
+    friend P operator*(P l, const T &r) { return {l.x * r, l.y * r}; }
+    friend P operator*(const T &l, P r) { return {l * r.x, l * r.y}; }
 
-    P& operator/=(const T& r) {
+    P &operator/=(const T &r) {
         this->x /= r;
         this->y /= r;
         return *this;
     }
-    friend P operator/(P l, const T& r) { return {l.x / r, l.y / r}; }
+    friend P operator/(P l, const T &r) { return {l.x / r, l.y / r}; }
 
     // Dot product
-    friend T operator*(P l, const P& r) { return l.x * r.x + l.y * r.y; }
+    friend T operator*(P l, const P &r) { return l.x * r.x + l.y * r.y; }
 
-    // Cross product (equiv to l.rotated() * r in 2D)
-    friend T operator^(P l, const P& r) { return l.x * r.y - l.y * r.x; }
+    // Cross product (equiv to l.perp() * r in 2D)
+    friend T operator^(P l, const P &r) { return l.x * r.y - l.y * r.x; }
 
     T magsq() { return this->x * this->x + this->y * this->y; }
     T mag() { return sqrt(this->magsq()); }
     P unit() { return (1. / this->mag()) * (*this); }
 
-    P rotated() { return {-this->y, this->x}; }
+    P perp() { return {-this->y, this->x}; }
 
     double angle() { return atan2((double)this->y, (double)this->x); }
     float angle_float() { return atan2((float)this->y, (float)this->x); }
@@ -98,7 +98,7 @@ bool seg_seg(P o0, P d0, P o1, P d1) {
 // iterate over all slopes, keeping points sorted with respect to the signed
 // distance to the slope.
 template <class OP>
-void iter_slopes(vector<P>& points, OP op) {
+void iter_slopes(vector<P> &points, OP op) {
     int N = points.size();
     vector<pair<int, int>> slopes;
     rep(i, N) rep(j, N) {
@@ -112,7 +112,7 @@ void iter_slopes(vector<P>& points, OP op) {
         P d2 = points[j.second] - points[j.first];
         return (d1 ^ d2) > 0;
     });
-    for (auto& s : slopes) {
+    for (auto &s : slopes) {
         int i = perms[s.first], j = perms[s.second];
         op(i, j);
         swap(points[perms[i]], points[perms[j]]);
@@ -124,9 +124,12 @@ void iter_slopes(vector<P>& points, OP op) {
 
 int main() {
     vector<vector<T>> tests{
-        {2, 1, -1, 4, 1, 1, 0, 2},  {2, 1, -1, 4, 1, 1, 1, 2},
-        {2, 1, -1, 4, 3, 0, 4, -1}, {2, 1, -1, 4, 3, 0, -2, 5},
-        {1, 2, 0, 1, 0, 0, 1, 1},   {0, 0, 1, 1, -1, 1, 0, 0},
+        {2, 1, -1, 4, 1, 1, 0, 2},
+        {2, 1, -1, 4, 1, 1, 1, 2},
+        {2, 1, -1, 4, 3, 0, 4, -1},
+        {2, 1, -1, 4, 3, 0, -2, 5},
+        {1, 2, 0, 1, 0, 0, 1, 1},
+        {0, 0, 1, 1, -1, 1, 0, 0},
         {0, 0, 1, 1, -1, 1, 1, -1},
     };
     for (auto t : tests) {
