@@ -1,7 +1,7 @@
 #include "point.cpp"
 
 // a segment or an infinite line
-// does not handle point segments
+// does not handle point segments!
 struct L {
     P o, d;
 
@@ -30,8 +30,7 @@ struct L {
     bool parallel(L r) const { return abs(d / r.d) <= EPS; }
 
     // check if segments intersect
-    // UNTESTED
-    bool seg_inter(L r) const {
+    bool seg_collide(L r) const {
         T z = d / r.d;
         if (abs(z) <= EPS) {
             if (abs(side(r.o)) > EPS) return false;
@@ -42,20 +41,6 @@ struct L {
         T s = inter(r), t = -r.inter(*this);
         if (z < 0) s = -s, t = -t, z = -z;
         return s >= -EPS && s <= z + EPS && t >= -EPS && t <= z + EPS;
-    }
-
-    // check if this segment intersects the given ray
-    // UNTESTED
-    bool segray_inter(L r) const {
-        T z = d / r.d;
-        if (abs(z) <= EPS) {
-            if (abs(side(r.o)) > EPS) return false;
-            T s = (r.o - o) * d;
-            return r.d * d < 0 ? s >= -EPS : s <= d * d + EPS;
-        }
-        T s = inter(r), t = -r.inter(*this);
-        if (z < 0) s = -s, t = -t, z = -z;
-        return s >= -EPS && s <= z + EPS && t >= -EPS;
     }
 
     // get the point in this line that is closest to a given point

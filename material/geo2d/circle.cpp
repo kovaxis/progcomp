@@ -5,11 +5,17 @@ struct C {
     P o;
     T r;
 
+    // find the circumcircle of the given **non-degenerate** triangle
+    static C thru_points(P a, P b, P c) {
+        P p = L((a + b) / 2, (b - a).rot()).intersection(L((a + c) / 2, (c - a).rot()));
+        return {p, (p - a).mag()};
+    }
+
     // intersects the circle with a line
     // returns the number of intersections
     // places intersection in `out`
     // needs space in `out` for at most 2 intersections
-    // UNTESTED
+    // SEMITESTED
     int line_inter(L l, P *out) const {
         P c = l.closest_to(o);
         T c2 = (c - o).magsq();
@@ -26,6 +32,11 @@ struct C {
     int inter(C h, P *out) const {
         L l(-2 * (o - h.o), (o - h.o).magsq() + h.r * h.r - r * r);
         return h.o = {}, h.line_inter(l, out);
+    }
+
+    // check if the given circles intersect
+    bool collide(C h) const {
+        return (h.o - o).magsq() <= (h.r + r) * (h.r + r);
     }
 
     // get the two tangent points between a circle and a point
