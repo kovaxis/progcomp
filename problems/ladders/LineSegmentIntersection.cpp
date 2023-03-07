@@ -50,7 +50,7 @@ struct P {
 };
 
 // a segment or an infinite line
-// does not handle point segments
+// does not handle point segments!
 struct L {
     P o, d;
 
@@ -67,9 +67,8 @@ struct L {
     T side(P r) const { return (r - o) / d; }
 
     // returns the intersection coefficient
-    //  0       -> start of this line
-    //  d / r.d -> end of this line (may be negative!)
-    // if d / r.d is zero, the lines are parallel and the coefficient is meaningless
+    // in the range [0, d / r.d]
+    // if d / r.d is zero, the lines are parallel
     T inter(L r) const { return (r.o - o) / r.d; }
 
     // get the single intersection point
@@ -80,7 +79,7 @@ struct L {
     bool parallel(L r) const { return abs(d / r.d) <= EPS; }
 
     // check if segments intersect
-    bool seg_inter(L r) const {
+    bool seg_collide(L r) const {
         T z = d / r.d;
         if (abs(z) <= EPS) {
             if (abs(side(r.o)) > EPS) return false;
@@ -93,6 +92,27 @@ struct L {
         return s >= -EPS && s <= z + EPS && t >= -EPS && t <= z + EPS;
     }
 
+    // full segment intersection
+    // produces a point segment if the intersection is a point
+    // however it **does not** handle point segments as input!
+    // UNTESTED
+    bool seg_inter(L r, L *out) const {
+        T z = d / r.d;
+        if (abs(z) <= EPS) {
+            if (abs(side(r.o)) > EPS) return false;
+            if (r.d * d < 0) r = {r.o + r.d, -r.d};
+            P s = o * d < r.o * d ? r.o : o;
+            P e = (o + d) * d < (r.o + r.d) * d ? o + d : r.o + r.d;
+            if (s * d > e * d) return false;
+            return *out = L(s, e - s), true;
+        }
+        T s = inter(r), t = -r.inter(*this);
+        if (z < 0) s = -s, t = -t, z = -z;
+        if (s >= -EPS && s <= z + EPS && t >= -EPS && t <= z + EPS)
+            return *out = L(o + d * s / z, P()), true;
+        return false;
+    }
+
     // check if the given point is on the segment
     bool point_on_seg(P r) const {
         if (abs(side(r)) > EPS) return false;
@@ -101,22 +121,7 @@ struct L {
         return true;
     }
 
-    // check if this segment intersects the given ray
-    // UNTESTED
-    bool segray_inter(L r) const {
-        T z = d / r.d;
-        if (abs(z) <= EPS) {
-            if (abs(side(r.o)) > EPS) return false;
-            T s = (r.o - o) * d;
-            return r.d * d < 0 ? s >= -EPS : s <= d * d + EPS;
-        }
-        T s = inter(r), t = -r.inter(*this);
-        if (z < 0) s = -s, t = -t, z = -z;
-        return s >= -EPS && s <= z + EPS && t >= -EPS;
-    }
-
     // get the point in this line that is closest to a given point
-    // UNTESTED
     P closest_to(P r) const { return r + (o - r) * d.rot() * d.rot() / d.magsq(); }
 };
 
@@ -191,20 +196,16 @@ int main() {
             continue;
         }
 
-        if (!a.seg_inter(b)) {
-            cout << "none\n";
-            continue;
-        }
-
-        if (a.parallel(b)) {
-            if (a.d * b.d < 0) b = L(b.o + b.d, -b.d);
-            P s = (b.o - a.o) * a.d > 0 ? b.o : a.o;
-            P e = (b.o + b.d - a.o) * a.d > a.d * a.d ? a.o + a.d : b.o + b.d;
-            if (e.x < s.x || (e.x == s.x && e.y < s.y)) swap(s, e);
-            if (s == e) cout << s << "\n";
-            else cout << s << " " << e << "\n";
+        L inter;
+        if (a.seg_inter(b, &inter)) {
+            if (inter.d == P()) cout << inter.o << "\n";
+            else {
+                P s = inter.o, e = inter.o + inter.d;
+                if (e.x < s.x || (s.x == e.x && e.y < s.y)) swap(s, e);
+                cout << s << " " << e << "\n";
+            }
         } else {
-            cout << a.intersection(b) << "\n";
+            cout << "none\n";
         }
     }
 }

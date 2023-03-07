@@ -1,7 +1,7 @@
 #include "point.cpp"
 
 // a segment or an infinite line
-// does not handle point segments!
+// does not handle point segments correctly!
 struct L {
     P o, d;
 
@@ -41,6 +41,34 @@ struct L {
         T s = inter(r), t = -r.inter(*this);
         if (z < 0) s = -s, t = -t, z = -z;
         return s >= -EPS && s <= z + EPS && t >= -EPS && t <= z + EPS;
+    }
+
+    // full segment intersection
+    // produces a point segment if the intersection is a point
+    // however it **does not** handle point segments as input!
+    bool seg_inter(L r, L *out) const {
+        T z = d / r.d;
+        if (abs(z) <= EPS) {
+            if (abs(side(r.o)) > EPS) return false;
+            if (r.d * d < 0) r = {r.o + r.d, -r.d};
+            P s = o * d < r.o * d ? r.o : o;
+            P e = (o + d) * d < (r.o + r.d) * d ? o + d : r.o + r.d;
+            if (s * d > e * d) return false;
+            return *out = L(s, e - s), true;
+        }
+        T s = inter(r), t = -r.inter(*this);
+        if (z < 0) s = -s, t = -t, z = -z;
+        if (s >= -EPS && s <= z + EPS && t >= -EPS && t <= z + EPS)
+            return *out = L(o + d * s / z, P()), true;
+        return false;
+    }
+
+    // check if the given point is on the segment
+    bool point_on_seg(P r) const {
+        if (abs(side(r)) > EPS) return false;
+        if ((r - o) * d < -EPS) return false;
+        if ((r - o - d) * d > EPS) return false;
+        return true;
     }
 
     // get the point in this line that is closest to a given point
