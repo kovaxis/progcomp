@@ -1,4 +1,4 @@
-// https://open.kattis.com/problems/cars
+// https://onlinejudge.org/index.php?option=onlinejudge&page=show_problem&problem=5028
 
 #pragma GCC optimize("Ofast")
 #include <bits/stdc++.h>
@@ -11,7 +11,7 @@ typedef long long ll;
 #define invrepx(i, a, b) for (int i = b - 1; i >= a; i--)
 #define invrep(i, n) invrepx(i, 0, n)
 
-typedef ll T;
+typedef double T;
 const T EPS = 0;
 
 struct P {
@@ -50,7 +50,7 @@ struct P {
 };
 
 // a segment or an infinite line
-// does not handle point segments correctly!
+// does not handle point segments!
 struct L {
     P o, d;
 
@@ -95,6 +95,7 @@ struct L {
     // full segment intersection
     // produces a point segment if the intersection is a point
     // however it **does not** handle point segments as input!
+    // UNTESTED
     bool seg_inter(L r, L *out) const {
         T z = d / r.d;
         if (abs(z) <= EPS) {
@@ -210,34 +211,45 @@ vector<P> halfplane_intersect(vector<L> &H) {
 
 // get the area of a polygon in ccw order
 // returns negative area for cw polygons
-T area2(const vector<P> &ps) {
+T area(const vector<P> &ps) {
     int N = ps.size();
     T a = 0;
     rep(i, N) a += (ps[i] - ps[0]) / (ps[(i + 1) % N] - ps[i]);
-    return a;
+    return a / 2;
 }
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(NULL);
 
-    int N;
-    cin >> N;
-    vector<P> a(N);
-    rep(i, N) cin >> a[i];
+    cout << fixed << setw(3) << setprecision(3);
 
-    ll b = 0;
-    rep(i, N) {
-        P d = a[(i + 1) % N] - a[i];
-        b += __gcd(abs(d.x), abs(d.y));
-        // cerr << "boundary points for (" << d << ") are " << __gcd(abs(d.x), abs(d.y)) << endl;
+    int tc = 0;
+    while (true) {
+        tc++;
+
+        int N;
+        if (!(cin >> N)) break;
+        P W, r;
+        cin >> W >> r;
+        vector<L> a(N);
+        rep(i, N) {
+            P s, e;
+            cin >> s >> e;
+            a[i] = L(s, e - s);
+        }
+
+        rep(i, N) {
+            if (a[i].side(r) > 0) a[i].d = -a[i].d;
+        }
+
+        a.push_back(L(P(), P(1, 0)));
+        a.push_back(L(P(), P(0, -1)));
+        a.push_back(L(W, P(0, 1)));
+        a.push_back(L(W, P(-1, 0)));
+
+        vector<P> b = halfplane_intersect(a);
+
+        cout << "Case #" << tc << ": " << area(b) << "\n";
     }
-
-    ll ar2 = abs(area2(a));
-
-    ll ans = (ar2 - b + 2) / 2;
-
-    cerr << "boundary = " << b << ", 2*area = " << ar2 << ", interior = " << ans << endl;
-
-    cout << ans << endl;
 }

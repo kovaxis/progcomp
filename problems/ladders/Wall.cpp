@@ -1,4 +1,4 @@
-// https://open.kattis.com/problems/cars
+// https://acm.timus.ru/problem.aspx?space=1&num=1185
 
 #pragma GCC optimize("Ofast")
 #include <bits/stdc++.h>
@@ -11,7 +11,10 @@ typedef long long ll;
 #define invrepx(i, a, b) for (int i = b - 1; i >= a; i--)
 #define invrep(i, n) invrepx(i, 0, n)
 
-typedef ll T;
+#define cerr \
+    if (0) cerr
+
+typedef double T;
 const T EPS = 0;
 
 struct P {
@@ -217,27 +220,48 @@ T area2(const vector<P> &ps) {
     return a;
 }
 
+// get the convex hull with the least amount of vertices for the given set of points.
+// probably misbehaves if points are not distinct!
+// UNTESTED
+vector<P> convex_hull(vector<P> &ps) {
+    int N = ps.size(), n = 0, k = 0;
+    if (N <= 2) return ps;
+    rep(i, N) if (make_pair(ps[i].y, ps[i].x) < make_pair(ps[k].y, ps[k].x)) k = i;
+    swap(ps[k], ps[0]);
+    sort(++ps.begin(), ps.end(), [&](P l, P r) {
+        T x = (r - l) / (ps[0] - l), d = (r - l) * (ps[0] - l);
+        return x > 0 || x == 0 && d < 0;
+    });
+
+    vector<P> H;
+    for (P p : ps) {
+        while (n >= 2 && (H[n - 1] - p) / (H[n - 2] - p) >= 0) H.pop_back(), n--;
+        H.push_back(p), n++;
+    }
+    return H;
+}
+
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(NULL);
 
-    int N;
-    cin >> N;
+    int N, L;
+    cin >> N >> L;
     vector<P> a(N);
     rep(i, N) cin >> a[i];
 
-    ll b = 0;
-    rep(i, N) {
-        P d = a[(i + 1) % N] - a[i];
-        b += __gcd(abs(d.x), abs(d.y));
-        // cerr << "boundary points for (" << d << ") are " << __gcd(abs(d.x), abs(d.y)) << endl;
+    vector<P> H = convex_hull(a);
+    int n = H.size();
+
+    cerr << "convex hull:" << endl;
+    rep(i, n) cerr << "  " << H[i] << endl;
+
+    double ans = 0;
+    rep(i, n) {
+        assert((H[(i + 1) % n] - H[(i + 0) % n]) / (H[(i + 2) % n] - H[(i + 1) % n]) > 0);
+        ans += (H[(i + 1) % n] - H[i]).mag();
     }
+    ans += 2.0 * 3.14159265358979323846 * L;
 
-    ll ar2 = abs(area2(a));
-
-    ll ans = (ar2 - b + 2) / 2;
-
-    cerr << "boundary = " << b << ", 2*area = " << ar2 << ", interior = " << ans << endl;
-
-    cout << ans << endl;
+    cout << (ll)(ans + 0.5) << endl;
 }

@@ -1,6 +1,6 @@
 #include "point.cpp"
 
-// get the area of a polygon in ccw order
+// get the area of a simple polygon in ccw order
 // returns negative area for cw polygons
 T area(const vector<P> &ps) {
     int N = ps.size();

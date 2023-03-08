@@ -11,7 +11,7 @@ typedef long long ll;
 #define invrepx(i, a, b) for (int i = b - 1; i >= a; i--)
 #define invrep(i, n) invrepx(i, 0, n)
 
-typedef ll T;
+typedef double T;
 const T EPS = 0;
 
 struct P {
@@ -210,34 +210,81 @@ vector<P> halfplane_intersect(vector<L> &H) {
 
 // get the area of a polygon in ccw order
 // returns negative area for cw polygons
-T area2(const vector<P> &ps) {
+T area(const vector<P> &ps) {
     int N = ps.size();
     T a = 0;
     rep(i, N) a += (ps[i] - ps[0]) / (ps[(i + 1) % N] - ps[i]);
-    return a;
+    return a / 2;
+}
+
+P overlap(double d, double ov, double ar, double br, double m) {
+    double s = max((d - br - ar) * ov, 0.);
+    double e = min((d + br - (-ar)) * ov, m);
+    return {s, e};
 }
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(NULL);
 
-    int N;
-    cin >> N;
-    vector<P> a(N);
-    rep(i, N) cin >> a[i];
+    double T;
+    char dc[2];
+    double s[2];
+    P p[2], v[2], sz[2];
+    cin >> T;
+    rep(k, 2) cin >> dc[k] >> p[k] >> s[k] >> sz[k];
 
-    ll b = 0;
-    rep(i, N) {
-        P d = a[(i + 1) % N] - a[i];
-        b += __gcd(abs(d.x), abs(d.y));
-        // cerr << "boundary points for (" << d << ") are " << __gcd(abs(d.x), abs(d.y)) << endl;
+    rep(k, 2) {
+        if (dc[k] == 'N') v[k] = {0, 1};
+        if (dc[k] == 'S') v[k] = {0, -1};
+        if (dc[k] == 'E') v[k] = {1, 0};
+        if (dc[k] == 'W') v[k] = {-1, 0};
+        if (v[k].y == 0) swap(sz[k].x, sz[k].y);
+        sz[k] = sz[k] / 2;
+        v[k] = v[k] * s[k];
     }
 
-    ll ar2 = abs(area2(a));
+    v[0].x = v[0].x - v[1].x, v[1].x = 0;
+    v[1].y = v[1].y - v[0].y, v[0].y = 0;
 
-    ll ans = (ar2 - b + 2) / 2;
+    p[1] = p[1] - p[0], p[0] = P();
 
-    cerr << "boundary = " << b << ", 2*area = " << ar2 << ", interior = " << ans << endl;
+    if (v[0].x < 0) v[0].x = -v[0].x, p[1].x = -p[1].x;
+    if (v[1].y < 0) v[1].y = -v[1].y, p[1].y = -p[1].y;
 
-    cout << ans << endl;
+    bool xz = v[0].x == 0, yz = v[1].y == 0;
+
+    if (xz) {
+        if (-sz[0].x >= p[1].x + sz[1].x || sz[0].x <= p[1].x - sz[1].x) {
+            cerr << "always safe in x" << endl;
+            cout << "safe" << endl;
+            return 0;
+        }
+        v[0].x = 1;
+        cerr << "static crash course in x" << endl;
+    }
+    if (yz) {
+        if (-sz[0].y >= p[1].y + sz[1].y || sz[0].y <= p[1].y - sz[1].y) {
+            cerr << "always safe in y" << endl;
+            cout << "safe" << endl;
+            return 0;
+        }
+        v[1].y = 1;
+        cerr << "static crash course in y" << endl;
+    }
+
+    P ox = {0, T * v[0].x * v[1].y};
+    if (!xz)
+        ox = overlap(p[1].x - p[0].x, v[1].y, sz[0].x, sz[1].x, T * v[0].x * v[1].y);
+    P oy = {0, T * v[0].x * v[1].y};
+    if (!yz)
+        oy = overlap(p[0].y - p[1].y, v[0].x, sz[1].y, sz[0].y, T * v[0].x * v[1].y);
+
+    P over = P(max(ox.x, oy.x), min(ox.y, oy.y));
+    cerr << "collision in range [" << over.x / (v[0].x * v[1].y) << ", " << over.y / (v[0].x * v[1].y) << "]" << endl;
+    if (over.x < over.y) {
+        cout << "crash" << endl;
+    } else {
+        cout << "safe" << endl;
+    }
 }

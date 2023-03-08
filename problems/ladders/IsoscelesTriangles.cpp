@@ -1,4 +1,4 @@
-// https://open.kattis.com/problems/cars
+// https://www.beecrowd.com.br/judge/en/problems/view/1378
 
 #pragma GCC optimize("Ofast")
 #include <bits/stdc++.h>
@@ -210,34 +210,36 @@ vector<P> halfplane_intersect(vector<L> &H) {
 
 // get the area of a polygon in ccw order
 // returns negative area for cw polygons
-T area2(const vector<P> &ps) {
+T area(const vector<P> &ps) {
     int N = ps.size();
     T a = 0;
     rep(i, N) a += (ps[i] - ps[0]) / (ps[(i + 1) % N] - ps[i]);
-    return a;
+    return a / 2;
 }
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(NULL);
 
-    int N;
-    cin >> N;
-    vector<P> a(N);
-    rep(i, N) cin >> a[i];
+    while (true) {
+        int N;
+        cin >> N;
+        if (N == 0) break;
+        vector<P> p(N);
+        rep(i, N) cin >> p[i];
 
-    ll b = 0;
-    rep(i, N) {
-        P d = a[(i + 1) % N] - a[i];
-        b += __gcd(abs(d.x), abs(d.y));
-        // cerr << "boundary points for (" << d << ") are " << __gcd(abs(d.x), abs(d.y)) << endl;
+        map<ll, ll> cnt;
+        ll ans = 0;
+        rep(i, N) {
+            cnt.clear();
+            rep(j, N) {
+                cnt[(p[i] - p[j]).magsq()] += 1;
+            }
+            for (auto [l, n] : cnt) {
+                ans += n * (n - 1) / 2;
+            }
+        }
+
+        cout << ans << "\n";
     }
-
-    ll ar2 = abs(area2(a));
-
-    ll ans = (ar2 - b + 2) / 2;
-
-    cerr << "boundary = " << b << ", 2*area = " << ar2 << ", interior = " << ans << endl;
-
-    cout << ans << endl;
 }

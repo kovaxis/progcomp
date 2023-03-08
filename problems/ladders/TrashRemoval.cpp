@@ -1,4 +1,4 @@
-// https://open.kattis.com/problems/cars
+// https://onlinejudge.org/index.php?option=com_onlinejudge&Itemid=8&page=show_problem&problem=3552
 
 #pragma GCC optimize("Ofast")
 #include <bits/stdc++.h>
@@ -11,7 +11,7 @@ typedef long long ll;
 #define invrepx(i, a, b) for (int i = b - 1; i >= a; i--)
 #define invrep(i, n) invrepx(i, 0, n)
 
-typedef ll T;
+typedef double T;
 const T EPS = 0;
 
 struct P {
@@ -50,7 +50,7 @@ struct P {
 };
 
 // a segment or an infinite line
-// does not handle point segments correctly!
+// does not handle point segments!
 struct L {
     P o, d;
 
@@ -95,6 +95,7 @@ struct L {
     // full segment intersection
     // produces a point segment if the intersection is a point
     // however it **does not** handle point segments as input!
+    // UNTESTED
     bool seg_inter(L r, L *out) const {
         T z = d / r.d;
         if (abs(z) <= EPS) {
@@ -174,70 +175,33 @@ struct C {
     }
 };
 
-// obtain the convex polygon that results from intersecting the given list
-// of halfplanes, represented as lines that allow their left side
-// assumes the halfplane intersection is bounded
-vector<P> halfplane_intersect(vector<L> &H) {
-    // L bb(P(-INF, -INF), P(INF, 0));
-    // rep(k, 4) H.push_back(bb), bb.o = bb.o.rot(), bb.d = bb.d.rot();
-
-    sort(H.begin(), H.end(), [](L a, L b) { return a.d.angcmp(b.d) < 0; });
-    deque<L> q;
-    int n = 0;
-    rep(i, H.size()) {
-        while (n >= 2 && H[i].side(q[n - 1].intersection(q[n - 2])) > 0)
-            q.pop_back(), n--;
-        while (n >= 2 && H[i].side(q[0].intersection(q[1])) > 0)
-            q.pop_front(), n--;
-        if (n > 0 && H[i].parallel(q[n - 1])) {
-            if (H[i].d * q[n - 1].d < 0) return {};
-            if (H[i].side(q[n - 1].o) > 0) q.pop_back(), n--;
-            else continue;
-        }
-        q.push_back(H[i]), n++;
-    }
-
-    while (n >= 3 && q[0].side(q[n - 1].intersection(q[n - 2])) > 0)
-        q.pop_back(), n--;
-    while (n >= 3 && q[n - 1].side(q[0].intersection(q[1])) > 0)
-        q.pop_front(), n--;
-    if (n < 3) return {};
-
-    vector<P> ps(n);
-    rep(i, n) ps[i] = q[i].intersection(q[(i + 1) % n]);
-    return ps;
-}
-
-// get the area of a polygon in ccw order
-// returns negative area for cw polygons
-T area2(const vector<P> &ps) {
-    int N = ps.size();
-    T a = 0;
-    rep(i, N) a += (ps[i] - ps[0]) / (ps[(i + 1) % N] - ps[i]);
-    return a;
-}
-
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(NULL);
 
-    int N;
-    cin >> N;
-    vector<P> a(N);
-    rep(i, N) cin >> a[i];
+    cout << fixed << setw(2) << setprecision(2);
 
-    ll b = 0;
-    rep(i, N) {
-        P d = a[(i + 1) % N] - a[i];
-        b += __gcd(abs(d.x), abs(d.y));
-        // cerr << "boundary points for (" << d << ") are " << __gcd(abs(d.x), abs(d.y)) << endl;
+    int tc = 0;
+    while (true) {
+        tc++;
+
+        int N;
+        cin >> N;
+        if (N == 0) break;
+        vector<P> a(N);
+        rep(i, N) cin >> a[i];
+
+        double ans = INFINITY;
+        rep(i, N) repx(j, i + 1, N) {
+            double l = 0., r = 0.;
+            rep(k, N) {
+                double d = (a[j] - a[i]).rot().unit() * (a[k] - a[i]);
+                l = min(l, d);
+                r = max(r, d);
+            }
+            ans = min(ans, r - l);
+        }
+
+        cout << "Case " << tc << ": " << ans << "\n";
     }
-
-    ll ar2 = abs(area2(a));
-
-    ll ans = (ar2 - b + 2) / 2;
-
-    cerr << "boundary = " << b << ", 2*area = " << ar2 << ", interior = " << ans << endl;
-
-    cout << ans << endl;
 }

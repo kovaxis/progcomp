@@ -51,33 +51,18 @@ int binsearch_right(int l, int r, bool isright(int)) {
 // searches for a minimum value of the given unimodal function (monotonic
 // positive derivative).
 template <typename T, typename U>
-pair<T, U> ctersearch(int iter, T a, T b, U f(T)) {
+pair<T, U> ctersearch(int iter, T l, T r, U f(T)) {
     const T INVG = 0.61803398874989484820;
 
-    U av = f(a);
-    U bv = f(b);
-
-    T mid = a + (b - a) * INVG;
-    U midv = f(mid);
-
-    for (int i = 0; i < iter; i++) {
-        T new_mid = a + (mid - a) * INVG;
-        U new_midv = f(new_mid);
-        if (new_midv > midv) {
-            // Search the right interval
-            a = b;
-            av = bv;
-            b = new_mid;
-            bv = new_midv;
-        } else {
-            // Search the left interval
-            b = mid;
-            bv = midv;
-            mid = new_mid;
-            midv = new_midv;
-        }
+    T m = l + (r - l) * INVG;
+    U lv = f(l), rv = f(r), mv = f(m);
+    rep(i, iter) {
+        T x = l + (m - l) * INVG;
+        U xv = f(x);
+        if (xv > mv) l = r, lv = rv, r = x, rv = xv;
+        else r = m, rv = mv, m = x, mv = xv;
     }
-    return {mid, midv};
+    return {m, mv};
 }
 
 int main() {

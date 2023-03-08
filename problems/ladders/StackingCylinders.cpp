@@ -1,6 +1,7 @@
-// https://open.kattis.com/problems/cars
+// http://acmgnyr.org/year2005/f.pdf
+// https://bacs.cs.istu.ru/submit.php?pid=2046
 
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("O0")
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -11,7 +12,10 @@ typedef long long ll;
 #define invrepx(i, a, b) for (int i = b - 1; i >= a; i--)
 #define invrep(i, n) invrepx(i, 0, n)
 
-typedef ll T;
+#define cerr \
+    if (1) cerr
+
+typedef double T;
 const T EPS = 0;
 
 struct P {
@@ -217,27 +221,45 @@ T area2(const vector<P> &ps) {
     return a;
 }
 
+P on_top(P l, P r) {
+    P d = (r - l) / 2;
+    double R = 1.;
+    return (l + r) / 2 + d.rot().unit() * sqrt(4 * R * R - d.magsq());
+}
+
+void printnum(double x) {
+    cerr << "printing " << fixed << setw(20) << setprecision(20) << x << " as " << fixed << setw(4) << setprecision(4) << x / 1. << endl;
+    cout << fixed << setw(4) << setprecision(4) << x / 1.;
+}
+
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(NULL);
 
-    int N;
-    cin >> N;
-    vector<P> a(N);
-    rep(i, N) cin >> a[i];
+    int TC;
+    cin >> TC;
+    rep(tc, TC) {
+        int N;
+        cin >> N;
+        vector<vector<P>> rows(N, vector<P>(N));
+        rep(j, N) cin >> rows[0][j].x;
+        // rep(j, N) rows[0][j].x = floor(rows[0][j].x * 10000 + 0.5);
+        rep(j, N) rows[0][j].y = 1;
+        sort(rows[0].begin(), rows[0].end(), [](P a, P b) { return a.x < b.x; });
 
-    ll b = 0;
-    rep(i, N) {
-        P d = a[(i + 1) % N] - a[i];
-        b += __gcd(abs(d.x), abs(d.y));
-        // cerr << "boundary points for (" << d << ") are " << __gcd(abs(d.x), abs(d.y)) << endl;
+        repx(i, 1, N) {
+            rep(j, N - i) {
+                rows[i][j] = on_top(rows[i - 1][j], rows[i - 1][j + 1]);
+            }
+        }
+
+        P ans = P((rows[0][0].x + rows[0][N - 1].x) / 2, rows[N - 1][0].y);
+        ans = rows[N - 1][0];
+
+        cout << setw(0) << tc + 1 << ": ";
+        printnum(ans.x);
+        cout << " ";
+        printnum(ans.y);
+        cout << "\n";
     }
-
-    ll ar2 = abs(area2(a));
-
-    ll ans = (ar2 - b + 2) / 2;
-
-    cerr << "boundary = " << b << ", 2*area = " << ar2 << ", interior = " << ans << endl;
-
-    cout << ans << endl;
 }

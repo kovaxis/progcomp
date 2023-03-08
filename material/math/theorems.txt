@@ -30,5 +30,4 @@ Legendre's formula
     
     k = floor(n/p) + floor(n/p^2) + floor(n/p^3) + ...
 
-    O(log n / log p)
-
+    Which can be computed in O(log n / log p) time
