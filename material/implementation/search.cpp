@@ -64,19 +64,3 @@ pair<T, U> ctersearch(int iter, T l, T r, U f(T)) {
     }
     return {m, mv};
 }
-
-int main() {
-    vector<int> ints = {4, 8, 9, 9, 11, 20};
-
-    // lower_bound
-    assert(lower_bound(ints.begin(), ints.end(), 3) - ints.begin() == 0);
-    assert(lower_bound(ints.begin(), ints.end(), 9) - ints.begin() == 2);
-    assert(lower_bound(ints.begin(), ints.end(), 10) - ints.begin() == 4);
-    assert(lower_bound(ints.begin(), ints.end(), 25) - ints.begin() == 6);
-
-    // upper_bound
-    assert(upper_bound(ints.begin(), ints.end(), 3) - ints.begin() == 0);
-    assert(upper_bound(ints.begin(), ints.end(), 9) - ints.begin() == 4);
-    assert(upper_bound(ints.begin(), ints.end(), 10) - ints.begin() == 4);
-    assert(upper_bound(ints.begin(), ints.end(), 25) - ints.begin() == 6);
-}

@@ -36,4 +36,7 @@ struct P {
     }
 
     bool operator==(P r) const { return abs(x - r.x) <= EPS && abs(y - r.y) <= EPS; }
+
+    double angle() const { return atan2(y, x); }
+    static P from_angle(double a) { return {cos(a), sin(a)}; }
 };
