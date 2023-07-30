@@ -72,5 +72,8 @@ struct L {
     }
 
     // get the point in this line that is closest to a given point
-    P closest_to(P r) const { return r + (o - r) * d.rot() * d.rot() / d.magsq(); }
+    P closest_to(P r) const {
+        P dr = d.rot();
+        return r + (o - r) * dr * dr / d.magsq();
+    }
 };

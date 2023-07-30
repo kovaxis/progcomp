@@ -9,7 +9,8 @@ struct C {
     C() : C(P(), T()) {}
 
     // intersects the circle with a line, assuming they intersect
-    // the intersections are sorted with respect to the direction of the line
+    // the intersections are sorted with respect to the direction of the
+    // line
     pair<P, P> line_inter(L l) const {
         P c = l.closest_to(o);
         T c2 = (c - o).magsq();
@@ -31,8 +32,9 @@ struct C {
     // the circles must intersect in one or two points!
     // REALLY UNTESTED
     pair<P, P> inter(C h) const {
-        h.o = h.o - o;
-        return h.line_inter({(1 + (r * r - h.r * h.r) / h.o.magsq()) / 2 * h.o, h.o.rot()});
+        P d = h.o - o;
+        T c = (r * r - h.r * h.r) / d.magsq();
+        return h.line_inter({(1 + c) / 2 * d, d.rot()});
     }
 
     // check if the given circles intersect
@@ -65,7 +67,8 @@ struct C {
 
     // find the circumcircle of the given **non-degenerate** triangle
     static C thru_points(P a, P b, P c) {
-        P p = L((a + b) / 2, (b - a).rot()).intersection(L((a + c) / 2, (c - a).rot()));
+        L l((a + b) / 2, (b - a).rot());
+        P p = l.intersection(L((a + c) / 2, (c - a).rot()));
         return {p, (p - a).mag()};
     }
 
@@ -80,7 +83,8 @@ struct C {
         return {{p.first, r}, {p.second, r}};
     }
 
-    // find the two circles that go through the given points and have radius `r`
+    // find the two circles that go through the given points and have
+    // radius `r`
     // the circles are sorted by angle with respect to the first point
     // the points must be at most at distance `r`!
     static pair<C, C> thru_points_r(P a, P b, T r) {

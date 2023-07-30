@@ -1,0 +1,5 @@
+#!/bin/bash
+
+g++ -g -std=c++20 -Wall -o tmp "$1.cpp"
+echo "running"
+time ./tmp

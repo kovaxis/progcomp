@@ -11,21 +11,23 @@ const double EPS = 1e-9;
 //  0 -> no solutions
 //  1 -> unique solution, stored in `ans`
 // -1 -> infinitely many solutions, one of which is stored in `ans`
+// UNTESTED
 int gauss(vector<vector<double>> a, vector<double> &ans) {
     int N = a.size(), M = a[0].size() - 1;
 
     vector<int> where(M, -1);
-    for (int col = 0, row = 0; col < M && row < N; col++, row++) {
-        int sel = row;
-        repx(i, row, N) if (abs(a[i][col]) > abs(a[sel][col])) sel = i;
-        if (abs(a[sel][col]) < EPS) continue;
-        repx(i, col, M + 1) swap(a[sel][i], a[row][i]);
-        where[col] = row;
+    for (int j = 0, i = 0; j < M && i < N; j++) {
+        int sel = i;
+        repx(k, i, N) if (abs(a[k][j]) > abs(a[sel][j])) sel = k;
+        if (abs(a[sel][j]) < EPS) continue;
+        repx(k, j, M + 1) swap(a[sel][k], a[i][k]);
+        where[j] = i;
 
-        rep(i, N) if (i != row) {
-            double c = a[i][col] / a[row][col];
-            repx(j, col, M + 1) a[i][j] -= a[row][j] * c;
+        rep(k, N) if (k != i) {
+            double c = a[k][j] / a[i][j];
+            repx(l, j, M + 1) a[k][l] -= a[i][l] * c;
         }
+        i++;
     }
 
     ans.assign(M, 0);

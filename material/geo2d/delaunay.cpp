@@ -102,7 +102,6 @@ pair<Q *, Q *> rec(Q *&H, const vector<P> &s) {
 // maximizes the minimum angle across all triangulations
 // the euclidean mst is a subset of these edges
 // O(N log N)
-// UNTESTED
 vector<P> triangulate(vector<P> pts) {
     sort(pts.begin(), pts.end(), [](P a, P b) {
         return make_pair(a.x, a.y) < make_pair(b.x, b.y);
