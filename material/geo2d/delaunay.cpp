@@ -16,7 +16,7 @@ struct Q {
 };
 
 T cross(P a, P b, P c) {
-    return (b - a) / (c - a);
+    return (b - a) % (c - a);
 }
 
 bool circ(P p, P a, P b, P c) { // is p in the circumcircle?
