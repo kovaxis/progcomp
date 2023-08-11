@@ -2,11 +2,6 @@
 
 const ll INF = 1e18;
 
-struct Edge {
-    int u, v;
-    ll c, f = 0;
-};
-
 // maximum flow algorithm.
 //
 // time: O(E V^2)
@@ -17,6 +12,11 @@ struct Edge {
 //
 // min-cut: find all nodes reachable from the source in the residual graph
 struct Dinic {
+    struct Edge {
+        int u, v;
+        ll c, f = 0;
+    };
+
     int N, s, t;
     vector<vector<int>> G;
     vector<Edge> E;
