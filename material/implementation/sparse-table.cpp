@@ -8,9 +8,9 @@ struct Sparse {
     T op(T a, T b) { return max(a, b); }
 
     Sparse() {}
+    Sparse(int N) : st{vector<T>(N)} {}
 
-    void reset(int N) { st = {vector<T>(N)}; }
-    void set(int i, T val) { st[0][i] = val; }
+    T &operator[](int i) { return st[0][i]; }
 
     // O(N log N) time
     // O(N log N) memory
