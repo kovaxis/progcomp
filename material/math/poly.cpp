@@ -14,22 +14,20 @@ const double PI = acos(-1);
 // of the polynomial A evaluated in all nths roots of unity: [A(w0), A(w1),
 // A(w2), ..., A(wn-1)], where w0 = 1 and w1 is the nth principal root of unity.
 void fft(vector<cd> &a, bool inv) {
-    int N = a.size(), k = 0;
+    int N = a.size(), k = 0, b;
     assert(N == 1 << __builtin_ctz(N));
 
-    rep(i, N) {
-        int b = N >> 1;
-        while (k & b) k ^= b, b >>= 1;
-        k ^= b;
-        if (i < k) swap(a[i], a[k]);
+    repx(i, 1, N) {
+        for (b = N >> 1; k & b;) k ^= b, b >>= 1;
+        if (i < (k ^= b)) swap(a[i], a[k]);
     }
 
     for (int l = 2; l <= N; l <<= 1) {
         double ang = 2 * PI / l * (inv ? -1 : 1);
         cd wl(cos(ang), sin(ang));
         for (int i = 0; i < N; i += l) {
-            cd w(1);
-            repx(j, 0, l / 2) {
+            cd w = 1;
+            rep(j, l / 2) {
                 cd u = a[i + j], v = a[i + j + l / 2] * w;
                 a[i + j] = u + v;
                 a[i + j + l / 2] = u - v;
@@ -38,19 +36,31 @@ void fft(vector<cd> &a, bool inv) {
         }
     }
 
-    if (inv)
-        for (cd &x : a) x /= N;
+    if (inv) rep(i, N) a[i] /= N;
 }
 
-const ll MOD = 7340033, ROOT = 5, ROOTPOW = 1 << 20;
+const ll MOD = 998244353, ROOT = 15311432;
+// const ll MOD = 2130706433, ROOT = 1791270792;
+// const ll MOD = 9223372036737335297ll, ROOT = 5320774565496356983ll;
+
+ll binexp_ll(ll a, ll e, ll M) {
+    assert(e >= 0);
+    ll res = 1 % M;
+    while (e) {
+        if (e & 1) res = (__int128)res * a % M;
+        a = (__int128)a * a % M;
+        e >>= 1;
+    }
+    return res;
+}
 
 void find_root_of_unity(ll M) {
     ll c = M - 1, k = 0;
     while (c % 2 == 0) c /= 2, k += 1;
 
     // find proper divisors of M - 1
-    vector<int> divs;
-    repx(d, 1, c) {
+    vector<ll> divs;
+    for (ll d = 1; d < c; d++) {
         if (d * d > c) break;
         if (c % d == 0) rep(i, k + 1) divs.push_back(d << i);
     }
@@ -60,7 +70,7 @@ void find_root_of_unity(ll M) {
     ll G = -1;
     repx(g, 2, M) {
         bool ok = true;
-        for (int d : divs) ok &= (binexp(g, d, M) != 1);
+        for (ll d : divs) ok &= (binexp_ll(g, d, M) != 1);
         if (ok) {
             G = g;
             break;
@@ -68,12 +78,15 @@ void find_root_of_unity(ll M) {
     }
     assert(G != -1);
 
-    ll w = binexp(G, c, M);
-    cerr << M << " = c * 2^k + 1" << endl;
+    ll w = binexp_ll(G, c, M);
+    cerr << "M = c * 2^k + 1" << endl;
+    cerr << "  M = " << M << endl;
     cerr << "  c = " << c << endl;
     cerr << "  k = " << k << endl;
-    cerr << "w^(2^k) == 1" << endl;
-    cerr << "  w = " << w << endl;
+    cerr << "  w^(2^k) == 1" << endl;
+    cerr << "    w = g^((M-1)/2^k) = g^c" << endl;
+    cerr << "    g = " << G << endl;
+    cerr << "    w = " << w << endl;
 }
 
 // compute the DFT of a power-of-two-length sequence, modulo a special prime
@@ -82,20 +95,22 @@ void find_root_of_unity(ll M) {
 // the modulus _must_ be a prime number with an Nth root of unity, where N is a
 // power of two. the FFT can only be performed on arrays of size <= N.
 void ntt(vector<ll> &a, bool inv) {
-    int N = a.size(), k = 0;
-    assert(N == 1 << __builtin_ctz(N) && N <= ROOTPOW);
+    vector<ll> wn;
+    for (ll p = ROOT; p != 1; p = p * p % MOD) wn.push_back(p);
+
+    int N = a.size(), k = 0, b;
+    assert(N == 1 << __builtin_ctz(N) && N <= 1 << wn.size());
     rep(i, N) a[i] = (a[i] % MOD + MOD) % MOD;
 
     repx(i, 1, N) {
-        int b = N >> 1;
-        while (k & b) k ^= b, b >>= 1;
-        k ^= b;
-        if (i < k) swap(a[i], a[k]);
+        for (b = N >> 1; k & b;) k ^= b, b >>= 1;
+        if (i < (k ^= b)) swap(a[i], a[k]);
     }
 
     for (int l = 2; l <= N; l <<= 1) {
-        ll wl = inv ? multinv(ROOT, MOD) : ROOT;
-        for (ll i = ROOTPOW; i > l; i >>= 1) wl = wl * wl % MOD;
+        ll wl = wn[wn.size() - __builtin_ctz(l)];
+        if (inv) wl = multinv(wl, MOD);
+
         for (int i = 0; i < N; i += l) {
             ll w = 1;
             repx(j, 0, l / 2) {
@@ -107,9 +122,8 @@ void ntt(vector<ll> &a, bool inv) {
         }
     }
 
-    ll ninv = multinv(N, MOD);
-    if (inv)
-        for (ll &x : a) x = x * ninv % MOD;
+    ll q = multinv(N, MOD);
+    if (inv) rep(i, N) a[i] = a[i] * q % MOD;
 }
 
 void convolve(vector<ll> &a, vector<ll> b, int n) {
@@ -276,6 +290,12 @@ int main() {
 
     cerr << endl;
     find_root_of_unity(998244353);
+
+    cerr << endl;
+    find_root_of_unity(2130706433);
+
+    cerr << endl;
+    find_root_of_unity(9223336852482686977);
 }
 
 #endif
