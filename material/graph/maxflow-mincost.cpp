@@ -77,7 +77,6 @@ struct Flow {
             if (p[t] == -1) break;
 
             ll f = INF;
-            int cur = t;
             for (int cur = t; p[cur] != -1; cur = E[p[cur]].u)
                 f = min(f, E[p[cur]].c - E[p[cur]].f);
             for (int cur = t; p[cur] != -1; cur = E[p[cur]].u)
