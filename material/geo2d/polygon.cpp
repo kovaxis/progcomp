@@ -1,74 +1,56 @@
 #include "point.cpp"
 
-// get the area of a simple polygon in ccw order
+// get TWICE the area of a simple polygon in ccw order
 // returns negative area for cw polygons
-T area(const vector<P> &ps) {
-    int N = ps.size();
+T area2(const vector<P> &p) {
+    int n = p.size();
     T a = 0;
-    rep(i, N) a += (ps[i] - ps[0]) % (ps[(i + 1) % N] - ps[i]);
-    return a / 2;
+    rep(i, n) a += (p[i] - p[0]) % (p[(i + 1) % n] - p[i]);
+    return a;
 }
 
-// checks whether a point is inside a simple polygon
-// returns -1 if inside, 0 if on border, 1 if outside
+// checks whether a point is inside a ccw simple polygon
+// returns 1 if inside, 0 if on border, -1 if outside
 // O(N)
-// UNTESTED
-int in_poly(const vector<P> &ps, P p) {
-    int N = ps.size(), w = 0;
-    rep(i, N) {
-        P s = ps[i] - p, e = ps[(i + 1) % N] - p;
-        if (s == P()) return 0;
-        if (s.y == 0 && e.y == 0) {
-            if (min(s.x, e.x) <= 0 && 0 <= max(s.x, e.x)) return 0;
-        } else {
-            bool b = s.y < 0;
-            if (b != (e.y < 0)) {
-                T z = s % e;
-                if (z == 0) return 0;
-                if (b == (z > 0)) w += b ? 1 : -1;
-            }
-        }
+int in_poly(const vector<P> &p, P q) {
+    int w = 0;
+    rep(i, p.size()) {
+        P a = p[i], b = p[(i + 1) % p.size()];
+        T k = (b - a) % (q - a);
+        T u = a.y - q.y, v = b.y - q.y;
+        if (k > 0 && u < 0 && v >= 0) w++;
+        if (k < 0 && v < 0 && u >= 0) w--;
+        if (k == 0 && (q - a) * (q - b) <= 0) return 0;
     }
-    return w ? -1 : 1;
+    return w ? 1 : -1;
 }
 
-// check if a point is in a convex polygon
-struct InConvex {
-    vector<P> ps;
-    T ll, lh, rl, rh;
-    int N, m;
-
-    // preprocess polygon
-    // O(N)
-    InConvex(const vector<P> &p) : ps(p), N(ps.size()), m(0) {
-        assert(N >= 2);
-        rep(i, N) if (ps[i].x < ps[m].x) m = i;
-        rotate(ps.begin(), ps.begin() + m, ps.end());
-        rep(i, N) if (ps[i].x > ps[m].x) m = i;
-        ll = lh = ps[0].y, rl = rh = ps[m].y;
-        for (P p : ps) {
-            if (p.x == ps[0].x) ll = min(ll, p.y), lh = max(lh, p.y);
-            if (p.x == ps[m].x) rl = min(rl, p.y), rh = max(rh, p.y);
-        }
+// check if point in ccw convex polygon, O(log n)
+// + if inside, 0 if on border, - if outside
+T in_convex(const vector<P> &p, P q) {
+    int l = 1, h = p.size() - 2;
+    assert(p.size() >= 3);
+    while (l != h) { // collinear points are unsupported!
+        int m = (l + h + 1) / 2;
+        if (q.left(p[0], p[m]) >= 0) l = m;
+        else h = m - 1;
     }
-    InConvex() {}
+    T in = min(q.left(p[0], p[1]), q.left(p.back(), p[0]));
+    return min(in, q.left(p[l], p[l + 1]));
+}
 
-    // check if point belongs in polygon
-    // returns -1 if inside, 0 if on border, 1 if outside
-    // O(log N)
-    int in_poly(P p) {
-        if (p.x < ps[0].x || p.x > ps[m].x) return 1;
-        if (p.x == ps[0].x) return p.y < ll || p.y > lh;
-        if (p.x == ps[m].x) return p.y < rl || p.y > rh;
-        int r = upper_bound(ps.begin(), ps.begin() + m, p, [](P a, P b) { return a.x < b.x; }) - ps.begin();
-        T z = (ps[r - 1] - ps[r]) % (p - ps[r]);
-        if (z >= 0) return !!z;
-        r = upper_bound(ps.begin() + m, ps.end(), p, [](P a, P b) { return a.x > b.x; }) - ps.begin();
-        z = (ps[r - 1] - ps[r % N]) % (p - ps[r % N]);
-        if (z >= 0) return !!z;
-        return -1;
+// get the point of the ccw convex polygon that is the farthest in the given direction.
+int extremal(const vector<P> &p, P d) {
+    int n = p.size(), l = 0, r = n - 1;
+    while (l < r) {
+        P e0 = (p[n - 1] - p[0]).rot();
+        int m = (l + r + 1) / 2;
+        P e = (p[(m + n - 1) % n] - p[m]).rot();
+        if (e0.angcmp_rel(d, e) < 0) r = m - 1;
+        else l = m;
     }
-};
+    return l;
+}
 
 // classify collision of a ray inside a ccw polygon vertex.
 // ray is (o, d), vertex is b, previous vertex is a, next is c.

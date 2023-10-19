@@ -24,15 +24,22 @@ struct P {
     P rot() const { return {-y, x}; }
     T operator*(P r) const { return x * r.x + y * r.y; }
     T operator%(P r) const { return rot() * r; }
+    T left(P a, P b) { return (b - a) % (*this - a); }
 
     T magsq() const { return x * x + y * y; }
     T mag() const { return sqrt(magsq()); }
     P unit() const { return *this / mag(); }
 
     bool half() const { return abs(y) <= EPS && x < -EPS || y < -EPS; }
-    T angcmp(P r) const {
+    T angcmp(P r) const { // like strcmp(this, r), returns 0 if equal, - if this < r, + if this > r
         int h = (int)half() - r.half();
         return h ? h : r % *this;
+    }
+    T angcmp_rel(P a, P b) { // like strcmp(a, b), returns 0 if equal, - if a < b, + if a > b
+        P z = *this;         // uses this as the cutting  point
+        int h = z % a <= 0 && z * a < 0 || z % a < 0;
+        h -= z % b <= 0 && z * b < 0 || z % b < 0;
+        return h ? h : b % a;
     }
 
     bool operator==(P r) const { return abs(x - r.x) <= EPS && abs(y - r.y) <= EPS; }

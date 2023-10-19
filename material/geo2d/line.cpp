@@ -65,10 +65,7 @@ struct L {
 
     // check if the given point is on the segment
     bool point_on_seg(P r) const {
-        if (abs(side(r)) > EPS) return false;
-        if ((r - o) * d < -EPS) return false;
-        if ((r - o - d) * d > EPS) return false;
-        return true;
+        return abs(side(r)) <= EPS && (r - o) * (r - o - d) <= EPS;
     }
 
     // get the point in this line that is closest to a given point
