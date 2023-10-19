@@ -1,3 +1,6 @@
+// https://judge.yosupo.jp/problem/point_add_range_sum
+// AC
+
 #include <bits/stdc++.h>
 using namespace std;
 typedef long long ll;
