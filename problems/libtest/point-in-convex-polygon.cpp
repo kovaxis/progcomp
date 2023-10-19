@@ -38,6 +38,7 @@ struct P {
     P rot() const { return {-y, x}; }
     T operator*(P r) const { return x * r.x + y * r.y; }
     T operator/(P r) const { return rot() * r; }
+    T left(P a, P b) const { return (b - a) / (*this - a); }
 
     T magsq() const { return x * x + y * y; }
     T mag() const { return sqrt(magsq()); }
@@ -52,37 +53,17 @@ struct P {
     bool operator==(P r) const { return abs(x - r.x) <= EPS && abs(y - r.y) <= EPS; }
 };
 
-struct InConvex {
-    vector<P> ps;
-    T ll, lh, rl, rh;
-    int N, m;
-
-    InConvex() {}
-    InConvex(const vector<P> &p) : ps(p), N(ps.size()), m(0) {
-        assert(N >= 2);
-        rep(i, N) if (ps[i].x < ps[m].x) m = i;
-        rotate(ps.begin(), ps.begin() + m, ps.end());
-        rep(i, N) if (ps[i].x > ps[m].x) m = i;
-        ll = lh = ps[0].y, rl = rh = ps[m].y;
-        for (P p : ps) {
-            if (p.x == ps[0].x) ll = min(ll, p.y), lh = max(lh, p.y);
-            if (p.x == ps[m].x) rl = min(rl, p.y), rh = max(rh, p.y);
-        }
+T in_convex(const vector<P> &p, P q) {
+    int l = 1, h = p.size() - 2;
+    assert(p.size() >= 3);
+    while (l != h) { // collinear points are unsupported!
+        int m = (l + h + 1) / 2;
+        if (q.left(p[0], p[m]) >= 0) l = m;
+        else h = m - 1;
     }
-
-    int in_poly(P p) {
-        if (p.x < ps[0].x || p.x > ps[m].x) return 1;
-        if (p.x == ps[0].x) return p.y < ll || p.y > lh;
-        if (p.x == ps[m].x) return p.y < rl || p.y > rh;
-        int r = upper_bound(ps.begin(), ps.begin() + m, p, [](P a, P b) { return a.x < b.x; }) - ps.begin();
-        T z = (ps[r - 1] - ps[r]) / (p - ps[r]);
-        if (z >= 0) return !!z;
-        r = upper_bound(ps.begin() + m, ps.end(), p, [](P a, P b) { return a.x > b.x; }) - ps.begin();
-        z = (ps[r - 1] - ps[r % N]) / (p - ps[r % N]);
-        if (z >= 0) return !!z;
-        return -1;
-    }
-};
+    T in = min(q.left(p[0], p[1]), q.left(p.back(), p[0]));
+    return min(in, q.left(p[l], p[l + 1]));
+}
 
 int N, M, K;
 
@@ -93,13 +74,12 @@ int main() {
     cin >> N >> M >> K;
     vector<P> ps(N);
     rep(i, N) cin >> ps[i];
-    InConvex conv(ps);
     ll hit = 0;
     rep(j, M) {
         P p;
         cin >> p;
-        int h = conv.in_poly(p);
-        hit += h <= 0;
+        ll h = in_convex(ps, p);
+        hit += h >= 0;
         cerr << "rocket " << p << " hit " << h << endl;
     }
     cout << (hit >= K ? "YES\n" : "NO\n");
