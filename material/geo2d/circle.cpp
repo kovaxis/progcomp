@@ -14,7 +14,7 @@ struct C {
     pair<P, P> line_inter(L l) const {
         P c = l.closest_to(o);
         T c2 = (c - o).magsq();
-        P e = sqrt(max(r * r - c2, T())) * l.d.unit();
+        P e = l.d * sqrt(max(r * r - c2, T()) / l.d.magsq());
         return {c - e, c + e};
     }
 
@@ -67,9 +67,9 @@ struct C {
 
     // find the circumcircle of the given **non-degenerate** triangle
     static C thru_points(P a, P b, P c) {
-        L l((a + b) / 2, (b - a).rot());
-        P p = l.intersection(L((a + c) / 2, (c - a).rot()));
-        return {p, (p - a).mag()};
+        b = b - a, c = c - a;
+        P p = (b * c.magsq() - c * b.magsq()).rot() / (b % c * 2);
+        return {a + p, p.mag()};
     }
 
     // find the two circles that go through the given point, are tangent
