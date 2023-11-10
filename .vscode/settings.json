@@ -1,9 +1,4 @@
 {
-    "files.associations": {
-        "iostream": "cpp",
-        "ostream": "cpp",
-        "valarray": "cpp"
-    },
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter"
     },
