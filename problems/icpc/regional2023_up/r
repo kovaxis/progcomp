@@ -1,0 +1,5 @@
+#!/bin/bash
+
+g++ -g -Wall -std=gnu++20 -o tmp $1.cpp
+echo running
+valgrind -q ./tmp

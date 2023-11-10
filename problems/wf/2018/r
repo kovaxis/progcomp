@@ -1,0 +1,6 @@
+#!/bin/bash
+
+g++ -g -Wall -std=gnu++20 -O2 $1.cpp -o tmp
+echo running
+valgrind -q ./tmp
+# time ./tmp
