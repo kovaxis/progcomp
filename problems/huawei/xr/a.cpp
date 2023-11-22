@@ -105,13 +105,13 @@ Answer solve_naive() {
             rep(k, K) {
                 transmitted += score_without_interference(ans, t, k, f.user);
             }
-            cerr << "frame " << j << " transmitted " << 192 * transmitted << "/" << f.thresh << " at time interval [" << f.l << ", " << t << "]" << endl;
+            cerr << "frame " << j << " transmitted " << W * transmitted << "/" << f.thresh << " at time interval [" << f.l << ", " << t << "]" << endl;
         }
     }
     return ans;
 }
 
-Answer solve_smartgreedy() {
+Answer solve_tiecells() {
     Answer ans;
 
     vector<vector<int>> pertime(T);
@@ -158,7 +158,7 @@ Answer solve_smartgreedy() {
                 int j = js[jj];
                 Frame f = F[j];
                 int n = f.user;
-                if (192 * transmitted[j] >= f.thresh) continue;
+                if (W * transmitted[j] >= f.thresh) continue;
                 vector<pair<float, int>> &bands = bands_per_user[jj];
 
                 // assign a band to this user/frame
@@ -200,7 +200,7 @@ int main() {
     }
 
     // Optimize
-    Answer ans = solve_smartgreedy();
+    Answer ans = solve_tiecells();
 
     // Print output
     cout << fixed << setprecision(10);
