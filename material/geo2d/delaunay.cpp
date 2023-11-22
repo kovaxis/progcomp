@@ -5,6 +5,7 @@ const T INF = 1e18;
 typedef ll lll; // if all coordinates are < 2e4
 // typedef __int128_t lll; // if on a 64-bit platform
 
+#define J(e) e->F(), e->p
 struct Q {
     Q *rot, *o;
     P p = {INF, INF};
@@ -15,9 +16,7 @@ struct Q {
     Q *next() { return r()->prev(); }
 };
 
-T cross(P a, P b, P c) {
-    return (b - a) % (c - a);
-}
+T cross(P a, P b, P c) { return (b - a) % (c - a); }
 
 bool circ(P p, P a, P b, P c) { // is p in the circumcircle?
     lll p2 = p.magsq(), A = a.magsq() - p2,
@@ -29,7 +28,7 @@ Q *makeEdge(Q *&H, P orig, P dest) {
     Q *r = H ? H : new Q{new Q{new Q{new Q{0}}}};
     H = r->o;
     r->r()->r() = r;
-    repx(i, 0, 4) r = r->rot, r->p = {INF, INF}, r->o = i & 1 ? r : r->r();
+    rep(i, 4) r = r->rot, r->p = {INF, INF}, r->o = i & 1 ? r : r->r();
     r->p = orig;
     r->F() = dest;
     return r;
@@ -57,19 +56,15 @@ pair<Q *, Q *> rec(Q *&H, const vector<P> &s) {
         return {side < 0 ? c->r() : a, side < 0 ? c : b->r()};
     }
 
-#define J(e) e->F(), e->p
-#define valid(e) (cross(e->F(), J(base)) > 0)
-    Q *A, *B, *ra, *rb;
     int half = s.size() / 2;
-    tie(ra, A) = rec(H, {s.begin(), s.end() - half});
-    tie(B, rb) = rec(H, {s.begin() + s.size() - half, s.end()});
+    auto [ra, A] = rec(H, {s.begin(), s.end() - half});
+    auto [B, rb] = rec(H, {s.end() - half, s.end()});
     while ((cross(B->p, J(A)) < 0 && (A = A->next())) ||
-           (cross(A->p, J(B)) > 0 && (B = B->r()->o)))
-        ;
+           (cross(A->p, J(B)) > 0 && (B = B->r()->o))) {}
     Q *base = connect(H, B->r(), A);
     if (A->p == ra->p) ra = base->r();
     if (B->p == rb->p) rb = base;
-
+    auto valid = [&](Q *e) { return cross(e->F(), J(base)) > 0; };
 #define DEL(e, init, dir)                            \
     Q *e = init->dir;                                \
     if (valid(e))                                    \
@@ -87,13 +82,9 @@ pair<Q *, Q *> rec(Q *&H, const vector<P> &s) {
         if (!valid(LC) && !valid(RC)) break;
         if (!valid(LC) || (valid(RC) && circ(J(RC), J(LC))))
             base = connect(H, RC, base->r());
-        else
-            base = connect(H, base->r(), LC->r());
+        else base = connect(H, base->r(), LC->r());
     }
     return {ra, rb};
-#undef J
-#undef valid
-#undef DEL
 }
 
 // there must be no duplicate points
@@ -113,20 +104,18 @@ vector<P> triangulate(vector<P> pts) {
     vector<Q *> q = {e};
     int qi = 0;
     while (cross(e->o->F(), e->F(), e->p) < 0) e = e->o;
-#define ADD                      \
-    {                            \
-        Q *c = e;                \
-        do {                     \
-            c->mark = 1;         \
-            pts.push_back(c->p); \
-            q.push_back(c->r()); \
-            c = c->next();       \
-        } while (c != e);        \
-    }
-    ADD;
+    auto add = [&]() {
+        Q *c = e;
+        do {
+            c->mark = 1;
+            pts.push_back(c->p);
+            q.push_back(c->r());
+            c = c->next();
+        } while (c != e);
+    };
+    add();
     pts.clear();
     while (qi < (int)q.size())
-        if (!(e = q[qi++])->mark) ADD;
+        if (!(e = q[qi++])->mark) add();
     return pts;
-#undef ADD
 }
