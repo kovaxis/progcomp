@@ -35,37 +35,44 @@ struct Answer {
     }
 };
 
+float score_bits(int j, int t, const Answer &ans) {
+    float transmitted = 0;
+    Frame f = F[j];
+    rep(k, K) {
+        int bands = 0;
+        float logsum = 0;
+        rep(r, R) {
+            if (ans.P[t][k][r][f.user] > 0) {
+                float interf1 = 0;
+                rep(m, N) if (m != f.user) {
+                    if (ans.P[t][k][r][m] > 0) {
+                        interf1 += D[k][r][f.user][m];
+                    }
+                }
+
+                float interf2 = 0;
+                rep(k2, K) if (k2 != k) {
+                    rep(n2, N) if (n2 != f.user) {
+                        interf2 += S0[t][k2][r][f.user] * ans.P[t][k2][r][n2] * exp(-D[k2][r][f.user][n2]);
+                    }
+                }
+
+                logsum += log(S0[t][k][r][f.user] * ans.P[t][k][r][f.user] / (1 + interf2)) + interf1;
+                bands += 1;
+            }
+        }
+        if (bands != 0) transmitted += bands * log1p(exp(logsum / bands));
+    }
+    return transmitted;
+}
+
 int score_frames(const Answer &ans) {
     int frames = 0;
     rep(j, J) {
         Frame f = F[j];
         float transmitted = 0;
         repx(t, f.l, f.r) {
-            rep(k, K) {
-                int bands = 0;
-                float product = 1;
-                rep(r, R) {
-                    if (ans.P[t][k][r][f.user] > 0) {
-                        float interf1 = 0;
-                        rep(m, N) if (m != f.user) {
-                            if (ans.P[t][k][r][m] > 0) {
-                                interf1 += D[k][r][f.user][m];
-                            }
-                        }
-
-                        float interf2 = 0;
-                        rep(k2, K) if (k2 != k) {
-                            rep(n2, N) if (n2 != f.user) {
-                                interf2 += S0[t][k2][r][f.user] * ans.P[t][k2][r][n2] * exp(-D[k2][r][f.user][n2]);
-                            }
-                        }
-
-                        product *= S0[t][k][r][f.user] * ans.P[t][k][r][f.user] * exp(interf1) / (1 + interf2);
-                        bands += 1;
-                    }
-                }
-                transmitted += bands * log1p(powf(product, 1.0f / bands));
-            }
+            transmitted += score_bits(j, t, ans);
         }
         frames += (W * transmitted >= f.thresh);
     }
