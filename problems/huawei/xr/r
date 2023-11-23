@@ -5,7 +5,7 @@ OK=0
 if [ "$1.cpp" -nt tmp ] || [ "$2" = "f" ]
 then
     echo "compiling..." >&2
-    g++ -D ENABLE_CERR -g -std=c++17 -o tmp "$1.cpp"
+    g++ -D ENABLE_CERR -g -std=c++17 -O2 -o tmp "$1.cpp"
     OK=$?
 fi
 
