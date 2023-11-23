@@ -260,7 +260,7 @@ Answer solve_percell(float alpha) {
                     int &rcount = rcount_per_user[jj];
                     float &logsum = logsum_per_user[jj];
                     float old_score = rcount ? rcount * log1p(exp(logsum / rcount)) : 0;
-                    if (alpha * W * (transmitted[j] + old_score) >= f.thresh) continue;
+                    if (alpha * W * (transmitted[j] + old_score) >= f.thresh) continue; // TODO: consider interference
                     vector<pair<float, int>> &bands = bands_per_user[jj];
 
                     // assign a band to this user/frame
@@ -289,8 +289,6 @@ Answer solve_percell(float alpha) {
                 transmitted[j] += alpha * score_without_interference(ans, t, k, f.user);
             }
         }
-
-        // now, consider interference and
     }
 
     return ans;

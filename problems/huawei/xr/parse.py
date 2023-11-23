@@ -3,7 +3,7 @@ import math
 import re
 
 testcase_re = re.compile(
-    r"^#(\d+): ([^\]]+?) \[(\d+) ms, (\d+) MB, (-?[\d]+(?:\.[\d]+)?) points\]$"
+    r"^#\s?(\d+): ([^\]]+?) \[(\d+) ms, (\d+) MB, (-?[\d]+(?:\.[\d]+)?) points\]$"
 )
 
 
