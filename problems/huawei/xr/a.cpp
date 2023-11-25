@@ -170,7 +170,7 @@ Answer solve_tiecells() {
             rep(r, R) {
                 float rank = 1;
                 rep(k, K) rank *= S0[t][k][r][n];
-                bands[r] = {-rank, r};
+                bands[r] = {-rank, r}; // TODO: try other heuristics
             }
             sort(bands.begin(), bands.end());
             bands_per_user.push_back(bands);
@@ -204,6 +204,113 @@ Answer solve_tiecells() {
             rep(k, K) {
                 transmitted[j] += score_without_interference(ans, t, k, f.user);
             }
+        }
+    }
+
+    return ans;
+}
+
+Answer solve_tiecells_fine() {
+    Answer ans;
+
+    vector<vector<int>> pertime(T);
+    rep(j, J) {
+        Frame f = F[j];
+        repx(t, f.l, f.r) pertime[t].push_back(j);
+    }
+
+    vector<pair<int, int>> ordered(T);
+    rep(t, T) {
+        ordered[t].first = pertime[t].size();
+        ordered[t].second = t;
+    }
+    sort(ordered.begin(), ordered.end());
+
+    vector<float> transmitted(J);
+    for (auto [_s, t] : ordered) {
+        // assign time slot t to frames js
+        vector<int> &js = pertime[t];
+
+        // assign the R bands in time t in all cells between frames js
+        cerr << "assigning " << js.size() << " users in time " << t << endl;
+
+        // greedily assign the band that maximizes the score win
+        struct UserCell {
+            int bands = 0;
+            float logsum = 0;
+
+            float score() const {
+                if (bands == 0) return 0;
+                return bands * log1p(exp(logsum / bands));
+            }
+
+            float increase(int t, int k, int r, int n) {
+                float oldscore = score();
+                int oldbands = bands;
+                float oldlogsum = logsum;
+                bands += 1;
+                logsum += log(S0[t][k][r][n]);
+                float inc = score() - oldscore;
+                if (inc > 0) {
+                    return inc;
+                } else {
+                    cerr << "oldscore = " << oldscore << ", newscore = " << score() << endl;
+                    bands = oldbands;
+                    logsum = oldlogsum;
+                    return 0;
+                }
+            }
+        };
+        vector<vector<UserCell>> user_cell(js.size(), vector<UserCell>(K));
+        vector<bool> assigned(R);
+        while (true) { // at most R times
+            float best_scorewin = 0;
+            int best_jj = -1;
+            int best_r = -1;
+            rep(jj, js.size()) {
+                int j = js[jj];
+                Frame f = F[j];
+
+                // determine the current score of the frame, in order to stop allocating bands if ready
+                float curbits = transmitted[j];
+                rep(k, K) curbits += user_cell[jj][k].score();
+                if (W * curbits > f.thresh) continue;
+
+                rep(r, R) if (!assigned[r]) {
+                    // determine the score win of assigning band r to user f.user
+                    float scorewin = 0;
+                    rep(k, K) {
+                        UserCell &uc = user_cell[jj][k];
+                        UserCell nuc = uc;
+                        scorewin += nuc.increase(t, k, r, f.user);
+                    }
+                    cerr << "  band " << r << " to user " << f.user << " has scorewin " << scorewin << endl;
+                    if (scorewin > best_scorewin) {
+                        best_scorewin = scorewin;
+                        best_jj = jj;
+                        best_r = r;
+                    }
+                }
+            }
+
+            // assign band r to frame/user best_jj
+            if (best_jj == -1) break;
+            cerr << "  assigning band " << best_r << " to user " << F[js[best_jj]].user << " with scorewin " << best_scorewin << endl;
+            int j = js[best_jj];
+            Frame f = F[j];
+            assigned[best_r] = true;
+            rep(k, K) {
+                UserCell &uc = user_cell[best_jj][k];
+                if (uc.increase(t, k, best_r, f.user) > 0) {
+                    ans.P[t][k][best_r][f.user] = 1;
+                }
+            }
+        }
+
+        // update the transmitted bits for all frames
+        rep(jj, js.size()) {
+            int j = js[jj];
+            rep(k, K) transmitted[j] += user_cell[jj][k].score();
         }
     }
 
@@ -309,7 +416,7 @@ int main() {
     }
 
     // Optimize
-    vector<Answer> answers = {solve_percell(0.5), solve_tiecells()};
+    vector<Answer> answers = {solve_percell(0.5), solve_tiecells(), solve_tiecells_fine()};
     Answer &ans = max_answer(answers);
 
     // Print output
