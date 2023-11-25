@@ -14,6 +14,8 @@ typedef long long ll;
     if (0) cerr
 #endif
 
+static mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+
 struct Frame {
     int thresh;
     int user;
@@ -88,18 +90,23 @@ float score(const Answer &ans) {
     return frames - power * 1e-6f;
 }
 
-Answer &max_answer(vector<Answer> &anss) {
-    float max_score = -INFINITY;
-    Answer *mx;
-    for (Answer &ans : anss) {
-        float s = score(ans);
-        if (s > max_score) {
-            max_score = s;
-            mx = &ans;
+struct AnswerStore {
+    unique_ptr<Answer> ans = make_unique<Answer>(), tmp = make_unique<Answer>();
+    float curscore = 0;
+
+    Answer &temp() {
+        memset(&*tmp, 0, sizeof(*tmp));
+        return *tmp;
+    }
+
+    void update() {
+        float newscore = score(*tmp);
+        if (newscore > curscore) {
+            curscore = newscore;
+            swap(ans, tmp);
         }
     }
-    return *mx;
-}
+};
 
 float score_without_interference(const Answer &ans, int t, int k, int n) {
     int bands = 0;
@@ -111,8 +118,8 @@ float score_without_interference(const Answer &ans, int t, int k, int n) {
     return bands * log1p(powf(product, 1.0f / bands));
 }
 
-Answer solve_naive() {
-    Answer ans;
+void solve_naive(AnswerStore &out) {
+    Answer &ans = out.temp();
 
     vector<bool> used(T);
     rep(j, J) {
@@ -133,11 +140,12 @@ Answer solve_naive() {
             // cerr << "frame " << j << " transmitted " << W * transmitted << "/" << f.thresh << " at time interval [" << f.l << ", " << t << "]" << endl;
         }
     }
-    return ans;
+
+    out.update();
 }
 
-Answer solve_tiecells() {
-    Answer ans;
+void solve_tiecells(AnswerStore &out) {
+    Answer &ans = out.temp();
 
     vector<vector<int>> pertime(T);
     rep(j, J) {
@@ -207,11 +215,11 @@ Answer solve_tiecells() {
         }
     }
 
-    return ans;
+    out.update();
 }
 
-Answer solve_tiecells_fine() {
-    Answer ans;
+void solve_tiecells_fine(AnswerStore &out) {
+    Answer &ans = out.temp();
 
     vector<vector<int>> pertime(T);
     rep(j, J) {
@@ -314,11 +322,11 @@ Answer solve_tiecells_fine() {
         }
     }
 
-    return ans;
+    out.update();
 }
 
-Answer solve_percell(float alpha) {
-    Answer ans;
+void solve_percell(AnswerStore &out, float alpha) {
+    Answer &ans = out.temp();
 
     vector<vector<int>> pertime(T);
     rep(j, J) {
@@ -398,7 +406,20 @@ Answer solve_percell(float alpha) {
         }
     }
 
-    return ans;
+    out.update();
+}
+
+void metasolve_with_beta(float beta, AnswerStore &out) {
+    // Limit to `beta` times the frames
+    int realJ = J;
+    J = beta * J;
+
+    // Try different solutions
+    solve_percell(out, 0.5);
+    // solve_tiecells(out); // better only in very few cases
+    solve_tiecells_fine(out);
+
+    J = realJ;
 }
 
 int main() {
@@ -415,9 +436,21 @@ int main() {
         F[j] = {s, u, l, l + d};
     }
 
-    // Optimize
-    vector<Answer> answers = {solve_percell(0.5), solve_tiecells(), solve_tiecells_fine()};
-    Answer &ans = max_answer(answers);
+    AnswerStore out;
+
+    // Solve once, shuffled
+    shuffle(&F[0], &F[J], rng);
+    metasolve_with_beta(1, out);
+
+    // Sort by frame threshold
+    sort(&F[0], &F[J], [](Frame &a, Frame &b) {
+        return a.thresh < b.thresh;
+    });
+
+    // Solve sorted
+    metasolve_with_beta(1, out);
+    metasolve_with_beta(0.93, out);
+    Answer &ans = *out.ans;
 
     // Print output
     cout << fixed << setprecision(10);
