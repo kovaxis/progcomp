@@ -14,7 +14,23 @@ typedef long long ll;
     if (0) cerr
 #endif
 
-static mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+float quickread() {
+    static string s;
+    cin >> s;
+    s.push_back(0);
+    char *c = &s[0];
+    bool neg = false;
+    if (*c == '-') c++, neg = true;
+    float x = 0;
+    while (*c && *c != '.') x = 10 * x + (*c - '0'), c++;
+    if (*c == '.') c++;
+    float mult = 1;
+    while (*c) mult *= 0.1, x += mult * (*c - '0'), c++;
+    if (neg) x = -x;
+    return x;
+}
+
+static mt19937 rng(7641206241ll);
 
 struct Frame {
     int thresh;
@@ -415,7 +431,7 @@ void metasolve_with_beta(float beta, AnswerStore &out) {
     J = beta * J;
 
     // Try different solutions
-    solve_percell(out, 0.5);
+    solve_percell(out, 0.51);
     // solve_tiecells(out); // better only in very few cases
     solve_tiecells_fine(out);
 
@@ -427,8 +443,8 @@ int main() {
 
     // Read input
     cin >> N >> K >> T >> R;
-    rep(t, T) rep(k, K) rep(r, R) rep(n, N) cin >> S0[t][k][r][n];
-    rep(k, K) rep(r, R) rep(m, N) rep(n, N) cin >> D[k][r][m][n];
+    rep(t, T) rep(k, K) rep(r, R) rep(n, N) S0[t][k][r][n] = quickread();
+    rep(k, K) rep(r, R) rep(m, N) rep(n, N) D[k][r][m][n] = quickread();
     cin >> J;
     rep(j, J) {
         int _j, s, u, l, d;
