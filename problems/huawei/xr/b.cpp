@@ -38,17 +38,17 @@ float S0[1000][10][10][100]; // t, k, r, n
 float D[10][10][100][100];   // k, r, n1, n2
 Frame F[5000];               // j
 
-float Sorder[10000000];
+float Dorder[1000000];
 
 void measure() {
     int i = 0;
-    rep(t, T) rep(k, K) rep(r, R) rep(n, N) Sorder[i++] = S0[t][k][r][n];
-    sort(&Sorder[0], &Sorder[i]);
+    rep(k, K) rep(r, R) rep(n1, N) rep(n2, N) Dorder[i++] = D[k][r][n1][n2];
+    sort(&Dorder[0], &Dorder[i]);
 
     float percentile = 123456789;
     int j = percentile * (i - 1) + 0.5;
-    float s = Sorder[j];
-    int mb = (log10(s) + 3) * 100 + 0.5;
+    float d = Dorder[j];
+    int mb = (d + 2) / 2 * 900;
 
     unsigned char *arr = (unsigned char *)malloc(mb * 1024 * 1024);
     memset(arr, 1, mb * 1024 * 1024);
