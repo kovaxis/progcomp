@@ -314,6 +314,7 @@ void solve_tiecells_fine(AnswerStore &out) {
                         UserCell nuc = uc;
                         scorewin += nuc.increase(t, k, r, f.user);
                     }
+                    scorewin /= (f.thresh - W * curbits + 0.1); // greedily try to finish frames as quickly as possible
                     cerr << "  band " << r << " to user " << f.user << " has scorewin " << scorewin << endl;
                     if (scorewin > best_scorewin) {
                         best_scorewin = scorewin;
