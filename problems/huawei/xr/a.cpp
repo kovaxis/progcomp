@@ -45,6 +45,8 @@ float S0[1000][10][10][100]; // t, k, r, n
 float D[10][10][100][100];   // k, r, n1, n2
 Frame F[5000];               // j
 
+vector<pair<int, vector<int>>> time_order;
+
 struct Answer {
     float P[1000][10][10][100]; // t, k, r, n
 
@@ -166,23 +168,9 @@ void solve_naive(AnswerStore &out) {
 void solve_tiecells(AnswerStore &out) {
     Answer &ans = out.temp();
 
-    vector<vector<int>> pertime(T);
-    rep(j, J) {
-        Frame f = F[j];
-        repx(t, f.l, f.r) pertime[t].push_back(j);
-    }
-
-    vector<pair<int, int>> ordered(T);
-    rep(t, T) {
-        ordered[t].first = pertime[t].size();
-        ordered[t].second = t;
-    }
-    sort(ordered.begin(), ordered.end());
-
     vector<float> transmitted(J);
-    for (auto [_s, t] : ordered) {
+    for (auto [t, js] : time_order) {
         // assign time slot t to frames js
-        vector<int> &js = pertime[t];
 
         // assign the R bands in time t in all cells between frames js
 
@@ -243,23 +231,9 @@ void solve_tiecells(AnswerStore &out) {
 void solve_tiecells_fine(AnswerStore &out) {
     Answer &ans = out.temp();
 
-    vector<vector<int>> pertime(T);
-    rep(j, J) {
-        Frame f = F[j];
-        repx(t, f.l, f.r) pertime[t].push_back(j);
-    }
-
-    vector<pair<int, int>> ordered(T);
-    rep(t, T) {
-        ordered[t].first = pertime[t].size();
-        ordered[t].second = t;
-    }
-    sort(ordered.begin(), ordered.end());
-
     vector<float> transmitted(J);
-    for (auto [_s, t] : ordered) {
+    for (auto [t, js] : time_order) {
         // assign time slot t to frames js
-        vector<int> &js = pertime[t];
 
         // assign the R bands in time t in all cells between frames js
         cerr << "assigning " << js.size() << " users in time " << t << endl;
@@ -356,23 +330,9 @@ void solve_tiecells_fine(AnswerStore &out) {
 void solve_percell(AnswerStore &out, float alpha) {
     Answer &ans = out.temp();
 
-    vector<vector<int>> pertime(T);
-    rep(j, J) {
-        Frame f = F[j];
-        repx(t, f.l, f.r) pertime[t].push_back(j);
-    }
-
-    vector<pair<int, int>> ordered(T);
-    rep(t, T) {
-        ordered[t].first = pertime[t].size();
-        ordered[t].second = t;
-    }
-    sort(ordered.begin(), ordered.end());
-
     vector<float> transmitted(J);
-    for (auto [_s, t] : ordered) {
+    for (auto [t, js] : time_order) {
         // assign time slot t to frames js
-        vector<int> &js = pertime[t];
 
         // assign each cell independently, and never factor in type 2 interference
         rep(k, K) {
@@ -483,9 +443,7 @@ float monopolize_timeslot(Answer *ans, int t, int j) {
     return transmitted;
 }
 
-void solve_splittime(AnswerStore &out) {
-    Answer &ans = out.temp();
-
+void time_order_heuristic() {
     vector<pair<float, pair<int, int>>> assignments;
     rep(j, J) {
         Frame f = F[j];
@@ -499,16 +457,42 @@ void solve_splittime(AnswerStore &out) {
 
     vector<bool> assigned(T);
     vector<float> transmitted(J);
+    time_order.clear();
+    time_order.reserve(T);
     for (auto [_, jt] : assignments) {
         auto [j, t] = jt;
         if (assigned[t]) continue;
         if (W * transmitted[j] > F[j].thresh) continue;
         assigned[t] = true;
+        time_order.push_back({t, {}});
 
-        transmitted[j] += monopolize_timeslot(&ans, t, j);
+        transmitted[j] += monopolize_timeslot(NULL, t, j);
     }
 
-    out.update();
+    vector<vector<int>> pertime(T);
+    rep(j, J) {
+        Frame f = F[j];
+        repx(t, f.l, f.r) {
+            pertime[t].push_back(j);
+        }
+    }
+
+    for (auto &[t, js] : time_order) {
+        swap(pertime[t], js);
+    }
+}
+
+void time_order_counts() {
+    time_order.assign(T, {0, {}});
+    rep(t, T) time_order[t].first = t;
+    rep(j, J) {
+        Frame f = F[j];
+        repx(t, f.l, f.r) time_order[t].second.push_back(j);
+    }
+
+    sort(time_order.begin(), time_order.end(), [](auto &a, auto &b) {
+        return a.second.size() < b.second.size();
+    });
 }
 
 // call the other solve functions, giving up on the most costly frames
@@ -518,11 +502,14 @@ void metasolve_with_beta(float beta, AnswerStore &out) {
     int realJ = J;
     J = beta * J;
 
+    // Figure out order
+    // time_order_heuristic();
+    time_order_counts();
+
     // Try different solutions
-    // solve_percell(out, 0.51);
+    solve_percell(out, 0.51);
     // solve_tiecells(out); // better only in very few cases
-    // solve_tiecells_fine(out);
-    solve_splittime(out);
+    solve_tiecells_fine(out);
 
     J = realJ;
 }
