@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+
+import json
+from pathlib import Path
+import random
+import string
+import time
+import requests
+import re
+import logging
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger()
+
+handle, password = Path("scrape/credentials").read_text().split("\n")
+
+contest_id = "1885"
+problem_id = "A"
+language_id = "73"
+filename = "b.cpp"
+
+s = requests.session()
+
+ftaa = "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(18))
+btaa = "".join(random.choice(string.hexdigits) for _ in range(32))
+
+login_page = s.get("https://codeforces.com/enter").content.decode("utf-8")
+
+login_csrf = re.search(r"name='csrf_token' value='([^']+)", login_page).group(1)
+
+s.post(
+    "https://codeforces.com/enter",
+    files={
+        "csrf_token": (None, login_csrf),
+        "action": (None, "enter"),
+        "ftaa": (None, ftaa),
+        "btaa": (None, btaa),
+        "handleOrEmail": (None, handle),
+        "password": (None, password),
+        "_tta": (None, "655"),
+        "remember": (None, "on"),
+    },
+).content.decode("utf-8")
+
+
+def submit(file_source: str):
+    log.info("submitting...")
+
+    problem_page = s.get(
+        f"https://codeforces.com/contest/{contest_id}/problem/{problem_id}",
+    ).content.decode("utf-8")
+
+    submit_csrf = re.search(r'\?csrf_token=([^"]+)', problem_page).group(1)
+
+    sub_page = s.post(
+        f"https://codeforces.com/contest/{contest_id}/problem/{problem_id}?csrf_token={submit_csrf}",
+        data={
+            "csrf_token": submit_csrf,
+            "action": "submitSolutionFormSubmitted",
+            "contestId": contest_id,
+            "submittedProblemIndex": problem_id,
+            "programTypeId": language_id,
+            "ftaa": ftaa,
+            "btaa": btaa,
+            "source": file_source,
+            "tabSize": "4",
+            "_tta": "655",
+            "sourceCodeConfirmed": "true",
+        },
+    ).content.decode("utf-8")
+
+    if "You have submitted exactly the same code before" in sub_page:
+        log.error("duplicate upload")
+        return ""
+
+    subs = re.findall(r'data-submission-id="(\d+)"', sub_page)
+
+    sub_id = subs[0]
+    sub_csrf = re.search(r"name='csrf_token' value='([^']+)", sub_page).group(1)
+
+    log.info(f"uploaded as submission {sub_id}, waiting for judge...")
+    time.sleep(5)
+    while True:
+        sub_data_json = s.post(
+            "https://codeforces.com/data/judgeProtocol",
+            data={
+                "csrf_token": sub_csrf,
+                "submissionId": sub_id,
+            },
+        ).content.decode("utf-8")
+        sub_data = json.loads(sub_data_json)
+        if sub_data == "Protocol is unavailable":
+            log.info("still not ready, waiting...")
+            time.sleep(5)
+        else:
+            log.info("judge answered")
+            break
+
+    return sub_data
+
+
+code = Path(filename).read_text()
+ans = submit(code)
+print(ans)
