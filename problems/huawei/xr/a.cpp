@@ -236,7 +236,8 @@ void solve_tiecells_fine(AnswerStore &out) {
         // assign time slot t to frames js
 
         // assign the R bands in time t in all cells between frames js
-        cerr << "assigning " << js.size() << " users in time " << t << endl;
+        int jcnt = js.size();
+        cerr << "assigning " << jcnt << " users in time " << t << endl;
 
         // greedily assign the band that maximizes the score win
         struct UserCell {
@@ -265,13 +266,13 @@ void solve_tiecells_fine(AnswerStore &out) {
                 }
             }
         };
-        vector<vector<UserCell>> user_cell(js.size(), vector<UserCell>(K));
+        vector<vector<UserCell>> user_cell(jcnt, vector<UserCell>(K));
         vector<bool> assigned(R);
         while (true) { // at most R times
             float best_scorewin = 0;
             int best_jj = -1;
             int best_r = -1;
-            rep(jj, js.size()) {
+            rep(jj, jcnt) {
                 int j = js[jj];
                 Frame f = F[j];
 
@@ -313,7 +314,7 @@ void solve_tiecells_fine(AnswerStore &out) {
         }
 
         // update the transmitted bits for all frames
-        rep(jj, js.size()) {
+        rep(jj, jcnt) {
             int j = js[jj];
             rep(k, K) transmitted[j] += user_cell[jj][k].score();
         }
@@ -479,6 +480,10 @@ void time_order_heuristic() {
 
     for (auto &[t, js] : time_order) {
         swap(pertime[t], js);
+
+        sort(js.begin(), js.end(), [](int a, int b) {
+            return F[a].thresh < F[b].thresh;
+        });
     }
 }
 
