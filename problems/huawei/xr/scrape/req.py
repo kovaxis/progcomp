@@ -100,13 +100,13 @@ def submit(file_source: str) -> str:
     return sub_data
 
 
-base_mb = 45
+base_mb = 42
 template = Path(filename).read_text() + f" // {random.randint(0, 1000000000)}"
-for percent in range(101):
+for percent in range(78, 101):
     code = template.replace("123456789", str(percent / 100))
     ans_text = submit(code)
     ans = parse.parse(ans_text)
     for tc in ans:
-        dval = (tc.mb - base_mb) / 900 * 2 - 2
-        print(f"{dval},", end="")
+        sdval = (tc.mb - base_mb) / 900
+        print(f"{sdval},", end="")
     print()

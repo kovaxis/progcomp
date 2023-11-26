@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 bytc = [[] for _ in range(parse.N)]
 
-with open("scrape/d.csv") as f:
+with open("scrape/sd.csv") as f:
     for row in csv.reader(f):
         for i in range(parse.N):
             bytc[i].append(float(row[i]))
@@ -17,5 +17,6 @@ for i, tc in enumerate(bytc):
     plt.plot(percent, tc)
     plt.title(f"Test Case #{i+1}")
     plt.xlabel("Percentile (%)")
-    plt.ylabel("D")
-    plt.savefig(f"scrape/out/ddistr/{i+1}.png")
+    plt.ylabel("sd_rk(D)")
+    plt.ylim(0, 1)
+    plt.savefig(f"scrape/out/sddistr/{i+1}.png")

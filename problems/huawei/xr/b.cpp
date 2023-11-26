@@ -38,17 +38,32 @@ float S0[1000][10][10][100]; // t, k, r, n
 float D[10][10][100][100];   // k, r, n1, n2
 Frame F[5000];               // j
 
-float Dorder[1000000];
+float sq(float x) { return x * x; }
+
+float SD[10000];
 
 void measure() {
     int i = 0;
-    rep(k, K) rep(r, R) rep(n1, N) rep(n2, N) Dorder[i++] = D[k][r][n1][n2];
-    sort(&Dorder[0], &Dorder[i]);
+    rep(n1, N) rep(n2, N) {
+        float avg = 0;
+        rep(k, K) rep(r, R) {
+            avg += D[k][r][n1][n2];
+        }
+        avg /= K * R;
+        float var = 0;
+        rep(k, K) rep(r, R) {
+            var += sq(D[k][r][n1][n2] - avg);
+        }
+        var /= K * R;
+        float sd = sqrt(var);
+        SD[i++] = sd;
+    }
+    sort(&SD[0], &SD[i]);
 
     float percentile = 123456789;
     int j = percentile * (i - 1) + 0.5;
-    float d = Dorder[j];
-    int mb = (d + 2) / 2 * 900;
+    float d = SD[j];
+    int mb = d * 900 + 0.5;
 
     unsigned char *arr = (unsigned char *)malloc(mb * 1024 * 1024);
     memset(arr, 1, mb * 1024 * 1024);
