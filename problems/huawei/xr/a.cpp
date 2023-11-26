@@ -437,6 +437,80 @@ void solve_percell(AnswerStore &out, float alpha) {
     out.update();
 }
 
+float monopolize_timeslot(Answer *ans, int t, int j) {
+    float transmitted = 0;
+    Frame f = F[j];
+    rep(k, K) {
+        // sort bands from best to worst
+        vector<pair<float, int>> bands(R);
+        rep(r, R) {
+            bands[r] = {-S0[t][k][r][f.user], r};
+        }
+        sort(bands.begin(), bands.end());
+
+        // assign bands until the score stops improving
+        float logsum = 0;
+        int rcount = 0;
+        float score = 0;
+        for (auto [_, r] : bands) {
+            float newlogsum = logsum + log(S0[t][k][r][f.user]);
+            int newrcount = rcount + 1;
+            float newscore = newrcount * log1p(exp(newlogsum / newrcount));
+            if (newscore > score) {
+                logsum = newlogsum;
+                rcount = newrcount;
+                score = newscore;
+                if (ans) ans->P[t][k][r][f.user] = 1;
+            }
+        }
+
+        // if there is leftover power, use it
+        if (rcount > 0) {
+            float adj_p = max(1.0f, min(4.0f, R / rcount - 1e-8f));
+            score += log(adj_p);
+            if (ans) {
+                rep(r, R) {
+                    if (ans->P[t][k][r][f.user] != 0) {
+                        ans->P[t][k][r][f.user] = adj_p;
+                    }
+                }
+            }
+        }
+
+        // this cell contributes `score` bits
+        transmitted += score;
+    }
+    return transmitted;
+}
+
+void solve_splittime(AnswerStore &out) {
+    Answer &ans = out.temp();
+
+    vector<pair<float, pair<int, int>>> assignments;
+    rep(j, J) {
+        Frame f = F[j];
+        repx(t, f.l, f.r) {
+            // figure out the best score we can get out of this timeslot
+            float score = monopolize_timeslot(NULL, t, j);
+            assignments.push_back({-score, {j, t}});
+        }
+    }
+    sort(assignments.begin(), assignments.end());
+
+    vector<bool> assigned(T);
+    vector<float> transmitted(J);
+    for (auto [_, jt] : assignments) {
+        auto [j, t] = jt;
+        if (assigned[t]) continue;
+        if (W * transmitted[j] > F[j].thresh) continue;
+        assigned[t] = true;
+
+        transmitted[j] += monopolize_timeslot(&ans, t, j);
+    }
+
+    out.update();
+}
+
 // call the other solve functions, giving up on the most costly frames
 // gives up on the (1 - beta) fraction of most costly frames
 void metasolve_with_beta(float beta, AnswerStore &out) {
@@ -445,9 +519,10 @@ void metasolve_with_beta(float beta, AnswerStore &out) {
     J = beta * J;
 
     // Try different solutions
-    solve_percell(out, 0.51);
+    // solve_percell(out, 0.51);
     // solve_tiecells(out); // better only in very few cases
-    solve_tiecells_fine(out);
+    // solve_tiecells_fine(out);
+    solve_splittime(out);
 
     J = realJ;
 }
