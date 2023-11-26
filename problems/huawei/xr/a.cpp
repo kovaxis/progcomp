@@ -134,6 +134,7 @@ float score_without_interference(const Answer &ans, int t, int k, int n) {
     return bands * log1p(powf(product, 1.0f / bands));
 }
 
+// go frame by frame, assigning entire timeslots to frames.
 void solve_naive(AnswerStore &out) {
     Answer &ans = out.temp();
 
@@ -160,6 +161,8 @@ void solve_naive(AnswerStore &out) {
     out.update();
 }
 
+// visit timeslots from the least crowded to most crowded, letting each user rank all bands and then distributing the bands according to these rankings
+// almost-superseeded by solve_tiecells_fine
 void solve_tiecells(AnswerStore &out) {
     Answer &ans = out.temp();
 
@@ -234,6 +237,9 @@ void solve_tiecells(AnswerStore &out) {
     out.update();
 }
 
+// visit timeslots from least crowded to most crowded
+// fully avoid interference (one user per band)
+// maintain score, and greedily assign bands to whichever user maximizes score win
 void solve_tiecells_fine(AnswerStore &out) {
     Answer &ans = out.temp();
 
@@ -341,6 +347,11 @@ void solve_tiecells_fine(AnswerStore &out) {
     out.update();
 }
 
+// visit timeslots from least crowded to most crowded
+// assign each cell independently
+// within each cell, let each user rank the bands and then distribute the bands
+// no type 1 interference occurs, but type 2 interference occurs and is ignored
+// to compensate, the effect of interference is approximated as constant, with parameter alpha indicating how much the score decreases
 void solve_percell(AnswerStore &out, float alpha) {
     Answer &ans = out.temp();
 
@@ -362,7 +373,7 @@ void solve_percell(AnswerStore &out, float alpha) {
         // assign time slot t to frames js
         vector<int> &js = pertime[t];
 
-        // assign each cell independently, and then factor in type 2 interference
+        // assign each cell independently, and never factor in type 2 interference
         rep(k, K) {
             // first, let each user rank the bands
             vector<vector<pair<float, int>>> bands_per_user;
@@ -425,6 +436,8 @@ void solve_percell(AnswerStore &out, float alpha) {
     out.update();
 }
 
+// call the other solve functions, giving up on the most costly frames
+// gives up on the (1 - beta) fraction of most costly frames
 void metasolve_with_beta(float beta, AnswerStore &out) {
     // Limit to `beta` times the frames
     int realJ = J;
