@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 import math
 import re
+import logging
+
+log = logging.getLogger()
 
 testcase_re = re.compile(
     r"^#\s?(\d+): ([^\]]+?) \[(\d+) ms, (\d+) MB, (-?[\d]+(?:\.[\d]+)?) points\]$"
@@ -32,7 +35,6 @@ def parse(s: str) -> list[TestCase]:
     lines = s.split("\n")
     out = []
     for tc in range(N):
-        print(f'matching on line "{lines[tc]}"')
         mat = testcase_re.match(lines[tc])
         num, status, ms, mb, score = mat.groups()
         num = int(num)
@@ -48,7 +50,7 @@ def parse(s: str) -> list[TestCase]:
             score=score,
         )
         if not test.ok():
-            print(f"WARNING: Test case #{test.number} has status {test.status}")
+            log.warn(f"Test case #{test.number} has status {test.status}")
         out.append(test)
     return out
 

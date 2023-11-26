@@ -8,27 +8,28 @@ import time
 import requests
 import re
 import logging
+import parse
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger()
 
-handle, password = Path("scrape/credentials").read_text().split("\n")
+handle, password = Path("scrape/credentials").read_text().split("\n")[0:2]
 
 contest_id = "1885"
 problem_id = "A"
 language_id = "73"
 filename = "b.cpp"
 
-s = requests.session()
+session = requests.session()
 
 ftaa = "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(18))
 btaa = "".join(random.choice(string.hexdigits) for _ in range(32))
 
-login_page = s.get("https://codeforces.com/enter").content.decode("utf-8")
+login_page = session.get("https://codeforces.com/enter").content.decode("utf-8")
 
 login_csrf = re.search(r"name='csrf_token' value='([^']+)", login_page).group(1)
 
-s.post(
+session.post(
     "https://codeforces.com/enter",
     files={
         "csrf_token": (None, login_csrf),
@@ -43,16 +44,16 @@ s.post(
 ).content.decode("utf-8")
 
 
-def submit(file_source: str):
+def submit(file_source: str) -> str:
     log.info("submitting...")
 
-    problem_page = s.get(
+    problem_page = session.get(
         f"https://codeforces.com/contest/{contest_id}/problem/{problem_id}",
     ).content.decode("utf-8")
 
     submit_csrf = re.search(r'\?csrf_token=([^"]+)', problem_page).group(1)
 
-    sub_page = s.post(
+    sub_page = session.post(
         f"https://codeforces.com/contest/{contest_id}/problem/{problem_id}?csrf_token={submit_csrf}",
         data={
             "csrf_token": submit_csrf,
@@ -81,7 +82,7 @@ def submit(file_source: str):
     log.info(f"uploaded as submission {sub_id}, waiting for judge...")
     time.sleep(5)
     while True:
-        sub_data_json = s.post(
+        sub_data_json = session.post(
             "https://codeforces.com/data/judgeProtocol",
             data={
                 "csrf_token": sub_csrf,
@@ -99,6 +100,13 @@ def submit(file_source: str):
     return sub_data
 
 
-code = Path(filename).read_text()
-ans = submit(code)
-print(ans)
+base_mb = 80
+template = Path(filename).read_text() + f" // {random.randint(0, 1000000000)}"
+for percent in range(101):
+    code = template.replace("123456789", str(percent / 100))
+    ans_text = submit(code)
+    ans = parse.parse(ans_text)
+    for tc in ans:
+        sval = 10 ** ((tc.mb - 80) / 100 - 3)
+        print(f"{sval},", end="")
+    print()
