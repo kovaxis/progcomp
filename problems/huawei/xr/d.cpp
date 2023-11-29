@@ -132,6 +132,8 @@ struct ScoreKeep {
     }
 
     void set(int t, int r, int k, int n, float p) {
+        if (ans.P[t][r][k][n] == p) return;
+
         // remove all cell scores in this band from their frame scores
         if (ans.P[t][r][k][n] == 0) active[t][r].push_back({k, n});
         for (auto [k2, n2] : active[t][r]) {
@@ -144,23 +146,29 @@ struct ScoreKeep {
         }
         if (ans.P[t][r][k][n] == 0) active[t][r].pop_back();
 
-        // update type-2 interference on other cells
+        // update type-1 and type-2 interference
         for (auto [k2, n2] : active[t][r])
-            if (k2 != k && n2 != n) {
-                logsum[t][k2][n2] += log1p(interf2[t][r][k2][n2]);
-                interf2[t][r][k2][n2] += S0[t][r][k][n2] * (p - ans.P[t][r][k][n]) * exp(-D[r][k][n][n2]);
-                logsum[t][k2][n2] -= log1p(interf2[t][r][k2][n2]);
-            }
-
-        if (ans.P[t][r][k][n] > 0) {
-            // deactivate this point
-
-            // remove type-1 interference on my cell and other cells
-            for (auto [k2, m] : active[t][r])
-                if (m != n && k2 == k) {
-                    logsum[t][k][m] -= D[r][k][n][m];
-                    logsum[t][k][n] -= D[r][k][n][m];
+            if (n2 != n)
+                if (k2 == k) {
+                    // type-1 interference
+                    if (p == 0) {
+                        // remove type-1 interference from my point and the other
+                        logsum[t][k][n2] -= D[r][k][n][n2];
+                        logsum[t][k][n] -= D[r][k][n][n2];
+                    } else if (ans.P[t][r][k][n] == 0) {
+                        // add type-1 interference from my point and the other
+                        logsum[t][k][n2] += D[r][k][n][n2];
+                        logsum[t][k][n] += D[r][k][n][n2];
+                    }
+                } else {
+                    // update type-2 interference on other cells
+                    logsum[t][k2][n2] += log1p(interf2[t][r][k2][n2]);
+                    interf2[t][r][k2][n2] += S0[t][r][k][n2] * (p - ans.P[t][r][k][n]) * exp(-D[r][k][n][n2]);
+                    logsum[t][k2][n2] -= log1p(interf2[t][r][k2][n2]);
                 }
+
+        if (p == 0) {
+            // deactivate this point
 
             // remove myself from my cell
             logsum[t][k][n] -= log(S0[t][r][k][n] * ans.P[t][r][k][n] / (1 + interf2[t][r][k][n]));
@@ -171,19 +179,8 @@ struct ScoreKeep {
                 swap(active[t][r][u], active[t][r].back());
                 active[t][r].pop_back();
             }
-        }
-
-        ans.P[t][r][k][n] = p;
-
-        if (p > 0) {
-            // add the value
-
-            // add type-1 interference on my cell and other cells
-            for (auto [k2, m] : active[t][r])
-                if (m != n && k2 == k) {
-                    logsum[t][k][m] += D[r][k][n][m];
-                    logsum[t][k][n] += D[r][k][n][m];
-                }
+        } else if (ans.P[t][r][k][n] == 0) {
+            // activate this point
 
             // calculate type-2 interference on myself
             interf2[t][r][k][n] = 0;
@@ -193,12 +190,18 @@ struct ScoreKeep {
                 }
 
             // add myself to my cell
-            logsum[t][k][n] += log(S0[t][r][k][n] * ans.P[t][r][k][n] / (1 + interf2[t][r][k][n]));
+            logsum[t][k][n] += log(S0[t][r][k][n] * p / (1 + interf2[t][r][k][n]));
             rcount[t][k][n] += 1;
 
             // mark as active
             active[t][r].push_back({k, n});
+        } else {
+            // just update my cell score
+            logsum[t][k][n] += log(p / ans.P[t][r][k][n]);
         }
+
+        // update the actual P value
+        ans.P[t][r][k][n] = p;
 
         // re-add all cell score in this band to their frame scores
         if (ans.P[t][r][k][n] == 0) active[t][r].push_back({k, n});
@@ -239,6 +242,7 @@ int main() {
             int r = uniform_int_distribution<int>(0, R - 1)(rng);
             int k = uniform_int_distribution<int>(0, K - 1)(rng);
             float p = uniform_real_distribution<float>()(rng);
+            if (uniform_int_distribution<int>(1, 100)(rng) <= 23) p = 0;
             sf->set(t, r, k, F[j].user, p);
         }
         if (score_frames(sf->ans) != sf->frames) {
