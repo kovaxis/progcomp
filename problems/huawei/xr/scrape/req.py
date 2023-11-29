@@ -47,32 +47,45 @@ session.post(
 def submit(file_source: str) -> str:
     log.info("submitting...")
 
-    problem_page = session.get(
-        f"https://codeforces.com/contest/{contest_id}/problem/{problem_id}",
-    ).content.decode("utf-8")
+    while True:
+        problem_page = session.get(
+            f"https://codeforces.com/contest/{contest_id}/problem/{problem_id}",
+        ).content.decode("utf-8")
 
-    submit_csrf = re.search(r'\?csrf_token=([^"]+)', problem_page).group(1)
+        if "Next submission can be sent in" in problem_page:
+            log.info("throttled, waiting 2 minutes...")
+            time.sleep(151)
+            continue
 
-    sub_page = session.post(
-        f"https://codeforces.com/contest/{contest_id}/problem/{problem_id}?csrf_token={submit_csrf}",
-        data={
-            "csrf_token": submit_csrf,
-            "action": "submitSolutionFormSubmitted",
-            "contestId": contest_id,
-            "submittedProblemIndex": problem_id,
-            "programTypeId": language_id,
-            "ftaa": ftaa,
-            "btaa": btaa,
-            "source": file_source,
-            "tabSize": "4",
-            "_tta": "655",
-            "sourceCodeConfirmed": "true",
-        },
-    ).content.decode("utf-8")
+        submit_csrf = re.search(r'\?csrf_token=([^"]+)', problem_page).group(1)
 
-    if "You have submitted exactly the same code before" in sub_page:
-        log.error("duplicate upload")
-        return ""
+        sub_page = session.post(
+            f"https://codeforces.com/contest/{contest_id}/problem/{problem_id}?csrf_token={submit_csrf}",
+            data={
+                "csrf_token": submit_csrf,
+                "action": "submitSolutionFormSubmitted",
+                "contestId": contest_id,
+                "submittedProblemIndex": problem_id,
+                "programTypeId": language_id,
+                "ftaa": ftaa,
+                "btaa": btaa,
+                "source": file_source,
+                "tabSize": "4",
+                "_tta": "655",
+                "sourceCodeConfirmed": "true",
+            },
+        ).content.decode("utf-8")
+
+        if "You have submitted exactly the same code before" in sub_page:
+            log.error("duplicate upload")
+            return ""
+
+        if "Next submission can be sent in" in sub_page:
+            log.info("throttled, waiting 2.5 minutes...")
+            time.sleep(151)
+            continue
+
+        break
 
     subs = re.findall(r'data-submission-id="(\d+)"', sub_page)
 
@@ -100,13 +113,14 @@ def submit(file_source: str) -> str:
     return sub_data
 
 
-base_mb = 42
+base_mb = 80
 template = Path(filename).read_text() + f" // {random.randint(0, 1000000000)}"
-for percent in range(78, 101):
-    code = template.replace("123456789", str(percent / 100))
+samples = 16
+for percent in range(samples):
+    code = template.replace("123456789", str(percent / (samples - 1)))
     ans_text = submit(code)
     ans = parse.parse(ans_text)
     for tc in ans:
-        sdval = (tc.mb - base_mb) / 900
-        print(f"{sdval},", end="")
+        sval = 10 ** ((tc.mb - base_mb) / 100 - 5)
+        print(f"{sval},", end="")
     print()
