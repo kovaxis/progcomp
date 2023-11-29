@@ -137,30 +137,22 @@ struct ScoreKeep {
     void set(int t, int r, int k, int n, float p) {
         if (ans.P[t][r][k][n] == p) return;
 
-        // remove all cell scores in this band from their frame scores
-        if (ans.P[t][r][k][n] == 0) active[t][r].push_back({k, n});
-        for (auto [k2, n2] : active[t][r]) {
-            int j = frameptr[t][n2];
-            float old = G[j];
-            if (rcount[t][k2][n2]) G[j] -= rcount[t][k2][n2] * log1p(exp(logsum[t][k2][n2] / rcount[t][k2][n2]));
-            if (W * old - EPS >= F[j].thresh && W * G[j] - EPS < F[j].thresh) {
-                frames -= 1;
-            }
-        }
-        if (ans.P[t][r][k][n] == 0) active[t][r].pop_back();
+        float myold_logsum = logsum[t][k][n];
+        int myold_rcount = rcount[t][k][n];
 
         // update type-1 and type-2 interference
         for (auto [k2, n2] : active[t][r])
-            if (n2 != n)
+            if (n2 != n) {
+                float old_logsum = logsum[t][k2][n2];
                 if (k2 == k) {
                     // type-1 interference
                     if (p == 0) {
                         // remove type-1 interference from my point and the other
-                        logsum[t][k][n2] -= D[r][k][n][n2];
+                        logsum[t][k2][n2] -= D[r][k][n][n2];
                         logsum[t][k][n] -= D[r][k][n][n2];
                     } else if (ans.P[t][r][k][n] == 0) {
                         // add type-1 interference from my point and the other
-                        logsum[t][k][n2] += D[r][k][n][n2];
+                        logsum[t][k2][n2] += D[r][k][n][n2];
                         logsum[t][k][n] += D[r][k][n][n2];
                     }
                 } else {
@@ -169,6 +161,14 @@ struct ScoreKeep {
                     interf2[t][r][k2][n2] += S0[t][r][k][n2] * (p - ans.P[t][r][k][n]) * exp(-D[r][k][n][n2]);
                     logsum[t][k2][n2] -= log1p(interf2[t][r][k2][n2]);
                 }
+
+                // update the frame scores
+                int j = frameptr[t][n2];
+                bool ok_old = (W * G[j] - EPS >= F[j].thresh);
+                G[j] += rcount[t][k2][n2] * (log1p(exp(logsum[t][k2][n2] / rcount[t][k2][n2])) - log1p(exp(old_logsum / rcount[t][k2][n2])));
+                bool ok_new = (W * G[j] - EPS >= F[j].thresh);
+                frames += int(ok_new) - int(ok_old);
+            }
 
         if (p == 0) {
             // deactivate this point
@@ -181,6 +181,7 @@ struct ScoreKeep {
             rep(u, active[t][r].size()) if (active[t][r][u] == make_pair((int8_t)k, (int8_t)n)) {
                 swap(active[t][r][u], active[t][r].back());
                 active[t][r].pop_back();
+                break;
             }
         } else if (ans.P[t][r][k][n] == 0) {
             // activate this point
@@ -203,22 +204,18 @@ struct ScoreKeep {
             logsum[t][k][n] += log(p / ans.P[t][r][k][n]);
         }
 
+        // update my frame score
+        int j = frameptr[t][n];
+        bool ok_old = (W * G[j] - EPS >= F[j].thresh);
+        if (myold_rcount) G[j] -= myold_rcount * log1p(exp(myold_logsum / myold_rcount));
+        if (rcount[t][k][n]) G[j] += rcount[t][k][n] * log1p(exp(logsum[t][k][n] / rcount[t][k][n]));
+        bool ok_new = (W * G[j] - EPS >= F[j].thresh);
+        frames += int(ok_new) - int(ok_old);
+
+        // cerr << "after setting t = " << t << ", r = " << r << ", k = " << k << ", n = " << n << " from p = " << ans.P[t][r][k][n] << " to p = " << p << ", transmitted for the active frame is " << W * G[frameptr[t][n]] << "/" << F[frameptr[t][n]].thresh << " and total score is " << frames << endl;
+
         // update the actual P value
         ans.P[t][r][k][n] = p;
-
-        // re-add all cell score in this band to their frame scores
-        if (ans.P[t][r][k][n] == 0) active[t][r].push_back({k, n});
-        for (auto [k2, n2] : active[t][r]) {
-            int j = frameptr[t][n2];
-            float old = G[j];
-            if (rcount[t][k2][n2]) G[j] += rcount[t][k2][n2] * log1p(exp(logsum[t][k2][n2] / rcount[t][k2][n2]));
-            if (W * old - EPS < F[j].thresh && W * G[j] - EPS >= F[j].thresh) {
-                frames += 1;
-            }
-        }
-        if (ans.P[t][r][k][n] == 0) active[t][r].pop_back();
-
-        // cerr << "after setting t = " << t << ", r = " << r << ", k = " << k << ", n = " << n << " to p = " << p << ", transmitted for the active frame is " << W * G[frameptr[t][n]] << "/" << F[frameptr[t][n]].thresh << " and total score is " << frames << endl;
     }
 };
 
@@ -266,7 +263,6 @@ int main() {
     }
 
     // Test score function
-    /*
     unique_ptr<ScoreKeep> sf = make_unique<ScoreKeep>();
     sf->reset();
     rep(tries, 1000) {
@@ -286,12 +282,13 @@ int main() {
         }
     }
     Answer &ans = sf->ans;
-    */
 
     // Optimize
+    /*
     AnswerStore out;
     solve(out);
     Answer &ans = out.answer();
+    */
 
     // Print output
     cout << fixed << setprecision(10);
