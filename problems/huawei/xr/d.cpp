@@ -32,8 +32,8 @@ float quickread() {
 
 const float EPS = 1e-6;
 
-// static mt19937 rng(7641206241ll);
-static mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+static mt19937 rng(7641206241ll);
+// static mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
 
 struct Frame {
     int thresh;
@@ -116,15 +116,18 @@ struct ScoreKeep {
     int8_t rcount[1000][10][100];                  // t, k, n
     float G[5000];                                 // j
     vector<pair<int8_t, int8_t>> active[1000][10]; // t, r -> k, n
-    int frames = 0;
+    int frames;
 
     short frameptr[1000][100]; // t, n
 
-    ScoreKeep() {
+    void reset() {
+        memset(&ans, 0, sizeof(ans));
+        memset(&interf2, 0, sizeof(interf2));
         memset(&logsum, 0, sizeof(logsum));
         memset(&rcount, 0, sizeof(rcount));
-        memset(&interf2, 0, sizeof(interf2));
         memset(&G, 0, sizeof(G));
+        rep(t, 1000) rep(r, 10) active[t][r].clear();
+        frames = 0;
         memset(&frameptr, -1, sizeof(frameptr));
         rep(j, J) {
             repx(t, F[j].l, F[j].r) frameptr[t][F[j].user] = j;
@@ -219,6 +222,35 @@ struct ScoreKeep {
     }
 };
 
+struct AnswerStore {
+    unique_ptr<ScoreKeep> ans = make_unique<ScoreKeep>(), tmp = make_unique<ScoreKeep>();
+    float curscore = 0;
+
+    ScoreKeep &temp() {
+        tmp->reset();
+        return *tmp;
+    }
+
+    Answer &answer() {
+        return ans->ans;
+    }
+
+    void update() {
+        float newscore = score(tmp->ans);
+        assert(ceil(newscore) == tmp->frames);
+        if (newscore > curscore) {
+            curscore = newscore;
+            swap(ans, tmp);
+        }
+    }
+};
+
+void solve(AnswerStore &out) {
+    ScoreKeep &sf = out.temp();
+
+    out.update();
+}
+
 int main() {
     ios::sync_with_stdio(0), cin.tie(0);
 
@@ -234,7 +266,9 @@ int main() {
     }
 
     // Test score function
+    /*
     unique_ptr<ScoreKeep> sf = make_unique<ScoreKeep>();
+    sf->reset();
     rep(tries, 1000) {
         rep(iter, 1000) {
             int j = uniform_int_distribution<int>(0, J - 1)(rng);
@@ -242,7 +276,7 @@ int main() {
             int r = uniform_int_distribution<int>(0, R - 1)(rng);
             int k = uniform_int_distribution<int>(0, K - 1)(rng);
             float p = uniform_real_distribution<float>()(rng);
-            if (uniform_int_distribution<int>(1, 100)(rng) <= 23) p = 0;
+            if (uniform_int_distribution<int>(1, 100)(rng) <= 5) p = 0;
             sf->set(t, r, k, F[j].user, p);
         }
         if (score_frames(sf->ans) != sf->frames) {
@@ -252,6 +286,12 @@ int main() {
         }
     }
     Answer &ans = sf->ans;
+    */
+
+    // Optimize
+    AnswerStore out;
+    solve(out);
+    Answer &ans = out.answer();
 
     // Print output
     cout << fixed << setprecision(10);
@@ -261,5 +301,4 @@ int main() {
     }
 
     cerr << "score: " << score(ans) << endl;
-    cerr << "sf score: " << sf->frames << endl;
 }
