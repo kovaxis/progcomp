@@ -324,6 +324,136 @@ void solve_tiecells_fine(AnswerStore &out) {
 }
 
 // visit timeslots from least crowded to most crowded
+// assign at most 2 users per band
+void solve_interference(AnswerStore &out) {
+    Answer &ans = out.temp();
+
+    // determine the pairs of users with low interference
+    vector<vector<vector<float>>> interf_score(R, vector<vector<float>>(N, vector<float>(N)));
+    rep(r, R) rep(n1, N) rep(n2, N) {
+        rep(k, K) interf_score[r][n1][n2] += D[k][r][n1][n2];
+    }
+
+    vector<float> transmitted(J);
+    for (auto [t, js] : time_order) {
+        // assign time slot t to frames js
+
+        // assign the R bands in time t in all cells between frames js
+        int jcnt = js.size();
+        if (jcnt == 0) continue;
+        cerr << "assigning " << jcnt << " users in time " << t << endl;
+
+        // keep track of partial scores
+        static float logsum[10][100];
+        static int rcount[10][100];
+        static float partialscore[100];
+        rep(k, K) rep(jj, jcnt) logsum[k][jj] = 0;
+        rep(k, K) rep(jj, jcnt) rcount[k][jj] = 0;
+        rep(jj, jcnt) partialscore[jj] = 0;
+
+        // go band by band assigning frames
+        rep(r, R) {
+            // assign the best frames in every cell
+            /*int cell_user[10];
+            rep(k, K) {
+                float best = 0;
+                int best_jj = -1;
+                rep(jj, jcnt) {
+                    Frame f = F[js[jj]];
+
+                    // check if the frame is done already
+                    float bits = transmitted[js[jj]] + partialscore[jj];
+                    if (W * bits > f.thresh) continue;
+
+                    if (S0[t][k][r][f.user] > best) {
+                        best = S0[t][k][r][f.user];
+                        best_jj = jj;
+                    }
+                }
+                cell_user[k] = best_jj;
+            }*/
+
+            // for every frame, we want to include at least a certain number of the best cells
+            // including less than this number is counterproductive
+            // calculate this number, and approximately how good it is for each frame
+            static float dp[1024];
+            static int dp_parent[1024];
+
+            static float edge_score[1024];
+            static int edge_jj[1024];
+            rep(m, (1 << K)) {
+                edge_score[m] = 0;
+                edge_jj[m] = -1;
+            }
+
+            rep(jj, jcnt) {
+                Frame f = F[js[jj]];
+                int ordered_cells[10];
+                rep(k, K) ordered_cells[k] = k;
+                sort(&ordered_cells[0], &ordered_cells[K], [&](int k1, int k2) {
+                    return S0[t][k1][r][f.user] > S0[t][k2][r][f.user];
+                });
+
+                int mask = 0;
+                rep(kk, K) {
+                    float rest = 0;
+                    repx(kk2, kk + 1, K) rest += S0[t][ordered_cells[kk2]][r][f.user];
+
+                    float scoredif = 0;
+                    rep(kk2, kk + 1) {
+                        int k = ordered_cells[kk2];
+                        float newlogsum = logsum[k][jj] + log(S0[t][k][r][f.user] / (1 + rest));
+                        int newrcount = rcount[k][jj] + 1;
+                        scoredif += newrcount * log1p(exp(newlogsum / newrcount));
+                    }
+
+                    mask |= (1 << ordered_cells[kk]);
+
+                    if (scoredif > edge_score[mask]) {
+                        edge_score[mask] = scoredif;
+                        edge_jj[mask] = jj;
+                    }
+                }
+            }
+
+            rep(m, (1 << K)) {
+                for (int subm = m;; subm = (subm - 1) & m) {
+                }
+            }
+
+            // update answer and partial scores
+            rep(k, K) {
+                int jj = cell_user[k];
+                Frame f = F[js[jj]];
+                ans.P[t][k][r][f.user] = 1;
+
+                float interf2 = 0;
+                rep(k2, K) if (k2 != k) {
+                    int n2 = F[js[cell_user[k2]]].user;
+                    interf2 += S0[t][k2][r][n2] * exp(-D[k2][r][f.user][n2]);
+                }
+                float s = log(S0[t][k][r][f.user] / (1 + interf2));
+                logsum[k][jj] += s;
+                rcount[k][jj] += 1;
+            }
+
+            // update the partial score for each frame
+            rep(jj, jcnt) {
+                partialscore[jj] = 0;
+                rep(k, K) partialscore[jj] += rcount[k][jj] ? rcount[k][jj] * log1p(exp(logsum[k][jj] / rcount[k][jj])) : 0;
+            }
+        }
+
+        // update the overall transmitted bits for all frames
+        rep(jj, jcnt) {
+            transmitted[js[jj]] += partialscore[jj];
+        }
+    }
+
+    out.update();
+}
+
+// visit timeslots from least crowded to most crowded
 // assign each cell independently
 // within each cell, let each user rank the bands and then distribute the bands
 // no type 1 interference occurs, but type 2 interference occurs and is ignored
@@ -512,9 +642,10 @@ void metasolve_with_beta(float beta, AnswerStore &out) {
     time_order_counts();
 
     // Try different solutions
-    solve_percell(out, 0.51);
+    // solve_percell(out, 0.51);
     // solve_tiecells(out); // better only in very few cases
-    solve_tiecells_fine(out);
+    // solve_tiecells_fine(out);
+    solve_interference(out);
 
     J = realJ;
 }
