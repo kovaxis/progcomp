@@ -111,13 +111,14 @@ float score(const Answer &ans) {
 
 struct ScoreKeep {
     Answer ans;
-    float interf2[1000][10][10][100]; // t, r, k, n
-    float logsum[1000][10][100];      // t, k, n
-    int rcount[1000][10][100];        // t, k, n
-    float G[5000];                    // j
+    float interf2[1000][10][10][100];              // t, r, k, n
+    float logsum[1000][10][100];                   // t, k, n
+    int8_t rcount[1000][10][100];                  // t, k, n
+    float G[5000];                                 // j
+    vector<pair<int8_t, int8_t>> active[1000][10]; // t, r -> k, n
     int frames = 0;
 
-    int frameptr[1000][100]; // t, n
+    short frameptr[1000][100]; // t, n
 
     ScoreKeep() {
         memset(&logsum, 0, sizeof(logsum));
@@ -132,7 +133,8 @@ struct ScoreKeep {
 
     void set(int t, int r, int k, int n, float p) {
         // remove all cell scores in this band from their frame scores
-        rep(k2, K) rep(n2, N) if ((k2 == k && n2 == n) || ans.P[t][r][k2][n2] > 0) {
+        if (ans.P[t][r][k][n] == 0) active[t][r].push_back({k, n});
+        for (auto [k2, n2] : active[t][r]) {
             int j = frameptr[t][n2];
             float old = G[j];
             if (rcount[t][k2][n2]) G[j] -= rcount[t][k2][n2] * log1p(exp(logsum[t][k2][n2] / rcount[t][k2][n2]));
@@ -140,26 +142,35 @@ struct ScoreKeep {
                 frames -= 1;
             }
         }
+        if (ans.P[t][r][k][n] == 0) active[t][r].pop_back();
 
         // update type-2 interference on other cells
-        rep(k2, K) if (k2 != k) rep(n2, N) if (n2 != n && ans.P[t][r][k2][n2] > 0) {
-            logsum[t][k2][n2] += log1p(interf2[t][r][k2][n2]);
-            interf2[t][r][k2][n2] += S0[t][r][k][n2] * (p - ans.P[t][r][k][n]) * exp(-D[r][k][n][n2]);
-            logsum[t][k2][n2] -= log1p(interf2[t][r][k2][n2]);
-        }
+        for (auto [k2, n2] : active[t][r])
+            if (k2 != k && n2 != n) {
+                logsum[t][k2][n2] += log1p(interf2[t][r][k2][n2]);
+                interf2[t][r][k2][n2] += S0[t][r][k][n2] * (p - ans.P[t][r][k][n]) * exp(-D[r][k][n][n2]);
+                logsum[t][k2][n2] -= log1p(interf2[t][r][k2][n2]);
+            }
 
         if (ans.P[t][r][k][n] > 0) {
             // deactivate this point
 
             // remove type-1 interference on my cell and other cells
-            rep(m, N) if (m != n && ans.P[t][r][k][m] > 0) {
-                logsum[t][k][m] -= D[r][k][n][m];
-                logsum[t][k][n] -= D[r][k][n][m];
-            }
+            for (auto [k2, m] : active[t][r])
+                if (m != n && k2 == k) {
+                    logsum[t][k][m] -= D[r][k][n][m];
+                    logsum[t][k][n] -= D[r][k][n][m];
+                }
 
             // remove myself from my cell
             logsum[t][k][n] -= log(S0[t][r][k][n] * ans.P[t][r][k][n] / (1 + interf2[t][r][k][n]));
             rcount[t][k][n] -= 1;
+
+            // mark as inactive
+            rep(u, active[t][r].size()) if (active[t][r][u] == make_pair((int8_t)k, (int8_t)n)) {
+                swap(active[t][r][u], active[t][r].back());
+                active[t][r].pop_back();
+            }
         }
 
         ans.P[t][r][k][n] = p;
@@ -168,24 +179,30 @@ struct ScoreKeep {
             // add the value
 
             // add type-1 interference on my cell and other cells
-            rep(m, N) if (m != n && ans.P[t][r][k][m] > 0) {
-                logsum[t][k][m] += D[r][k][n][m];
-                logsum[t][k][n] += D[r][k][n][m];
-            }
+            for (auto [k2, m] : active[t][r])
+                if (m != n && k2 == k) {
+                    logsum[t][k][m] += D[r][k][n][m];
+                    logsum[t][k][n] += D[r][k][n][m];
+                }
 
             // calculate type-2 interference on myself
             interf2[t][r][k][n] = 0;
-            rep(k2, K) if (k2 != k) rep(n2, N) if (n2 != n && ans.P[t][r][k2][n2] > 0) {
-                interf2[t][r][k][n] += S0[t][r][k2][n] * ans.P[t][r][k2][n2] * exp(-D[r][k2][n][n2]);
-            }
+            for (auto [k2, n2] : active[t][r])
+                if (k2 != k && n2 != n) {
+                    interf2[t][r][k][n] += S0[t][r][k2][n] * ans.P[t][r][k2][n2] * exp(-D[r][k2][n][n2]);
+                }
 
             // add myself to my cell
             logsum[t][k][n] += log(S0[t][r][k][n] * ans.P[t][r][k][n] / (1 + interf2[t][r][k][n]));
             rcount[t][k][n] += 1;
+
+            // mark as active
+            active[t][r].push_back({k, n});
         }
 
         // re-add all cell score in this band to their frame scores
-        rep(k2, K) rep(n2, N) if ((k2 == k && n2 == n) || ans.P[t][r][k2][n2] > 0) {
+        if (ans.P[t][r][k][n] == 0) active[t][r].push_back({k, n});
+        for (auto [k2, n2] : active[t][r]) {
             int j = frameptr[t][n2];
             float old = G[j];
             if (rcount[t][k2][n2]) G[j] += rcount[t][k2][n2] * log1p(exp(logsum[t][k2][n2] / rcount[t][k2][n2]));
@@ -193,6 +210,7 @@ struct ScoreKeep {
                 frames += 1;
             }
         }
+        if (ans.P[t][r][k][n] == 0) active[t][r].pop_back();
 
         // cerr << "after setting t = " << t << ", r = " << r << ", k = " << k << ", n = " << n << " to p = " << p << ", transmitted for the active frame is " << W * G[frameptr[t][n]] << "/" << F[frameptr[t][n]].thresh << " and total score is " << frames << endl;
     }
@@ -224,8 +242,8 @@ int main() {
             sf->set(t, r, k, F[j].user, p);
         }
         if (score_frames(sf->ans) != sf->frames) {
-            cerr << "real: " << score_frames(sf->ans);
-            cerr << "online: " << sf->frames;
+            cerr << "real: " << score_frames(sf->ans) << endl;
+            cerr << "online: " << sf->frames << endl;
             throw "not equal!";
         }
     }
