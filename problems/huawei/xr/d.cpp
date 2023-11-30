@@ -140,6 +140,52 @@ float score(const Answer &ans) {
     return frames - power * 1e-6f;
 }
 
+template <class T>
+struct UnorderedSet {
+    T M;
+    vector<T> values, indices;
+
+    UnorderedSet() : M(0) {}
+    UnorderedSet(int M) : M(M), indices(M, -1) {}
+
+    void add(int x) {
+        if (indices[x] != -1) return;
+        indices[x] = values.size();
+        values.push_back(x);
+    }
+
+    void remove(int x) {
+        if (indices[x] == -1) return;
+        T idx = indices[x];
+        indices[x] = -1;
+        swap(values[idx], values.back());
+        values.pop_back();
+        indices[values[idx]] = idx;
+    }
+};
+
+template <class T>
+struct SlowSet {
+    vector<T> values;
+
+    void clear() {
+        values.clear();
+    }
+
+    // add a value, assuming it is not already in the set
+    void forceadd(T x) {
+        values.push_back(x);
+    }
+
+    void remove(T x) {
+        rep(i, int(values.size())) if (values[i] == x) {
+            swap(values[i], values.back());
+            values.pop_back();
+            break;
+        }
+    }
+};
+
 struct ScoreKeep {
     Answer ans;
     float interf2[1000][10][10][100];              // t, r, k, n
@@ -149,8 +195,7 @@ struct ScoreKeep {
     vector<pair<int8_t, int8_t>> active[1000][10]; // t, r -> k, n
     int frames;
 
-    vector<short> missing_frames;
-    short missing_frames_rev[5000];
+    UnorderedSet<short> missing_frames;
     float bandpower[1000][10][10]; // t, r, k
 
     short frameptr[1000][100]; // t, n
@@ -174,9 +219,8 @@ struct ScoreKeep {
         rep(t, 1000) rep(r, 10) active[t][r].clear();
         frames = 0;
 
-        missing_frames.clear();
-        rep(j, J) missing_frames.push_back(j);
-        rep(j, J) missing_frames_rev[j] = j;
+        missing_frames = {J};
+        rep(j, J) missing_frames.add(j);
         memzero(bandpower);
     }
 
@@ -310,14 +354,9 @@ struct ScoreKeep {
 
         // maintain a list of frames that are not ready
         if (delta < 0) {
-            missing_frames_rev[j] = missing_frames.size();
-            missing_frames.push_back(j);
+            missing_frames.add(j);
         } else if (delta > 0) {
-            int idx = missing_frames_rev[j];
-            missing_frames_rev[j] = -1;
-            swap(missing_frames[idx], missing_frames.back());
-            missing_frames_rev[missing_frames[idx]] = idx;
-            missing_frames.pop_back();
+            missing_frames.remove(j);
         }
     }
 };
@@ -439,6 +478,11 @@ void solve_greedy(Answer &ans) {
     }
 }
 
+double anneal_start;
+double anneal_time() {
+    return (clock() - anneal_start) / double(start_time + 18 * CLOCKS_PER_SEC / 10 - anneal_start);
+}
+
 void solve_anneal(AnswerStore &out) {
     ScoreKeep &sf = out.temp();
 
@@ -453,20 +497,20 @@ void solve_anneal(AnswerStore &out) {
         pertime[t].push_back(j);
     }
 
-    cerr << (start_time + 1.9 * CLOCKS_PER_SEC - clock()) / (double)CLOCKS_PER_SEC << " seconds left" << endl;
-    double anneal_start = clock();
+    anneal_start = clock();
+    cerr << (start_time + 1.8 * CLOCKS_PER_SEC - clock()) / (double)CLOCKS_PER_SEC << " seconds left" << endl;
     int iters = 0, no_r_src = 0, no_j_src = 0, no_r_dst = 0;
     double accept_prob = 1;
     double inc = -3e-5;
-    while (clock() < start_time + 1.8 * CLOCKS_PER_SEC) {
-        // rep(_iter, 600000) {
+    // rep(_iter, 600000) {
+    while (anneal_time() < 1) {
         // choose a random perturbation
         float delta = 1;
 
         // pick a random destination frame, that needs some bits
-        if (sf.missing_frames.empty()) break;
-        int j_idx = uniform_int_distribution<int>(0, sf.missing_frames.size() - 1)(rng);
-        int j_dst = sf.missing_frames[j_idx];
+        if (sf.missing_frames.values.empty()) break;
+        int j_idx = uniform_int_distribution<int>(0, sf.missing_frames.values.size() - 1)(rng);
+        int j_dst = sf.missing_frames.values[j_idx];
         // int j_dst = uniform_int_distribution<int>(0, J - 1)(rng);
         int n_dst = F[j_dst].user;
 
@@ -514,7 +558,7 @@ void solve_anneal(AnswerStore &out) {
         iters += 1;
 
         // undo operation if it became worse
-        double progress = (clock() - anneal_start) / (1.8 * CLOCKS_PER_SEC);
+        double progress = anneal_time();
         accept_prob = 0; // exp(-progress * 30);
         // accept_prob_log += inc;
         if (sf.frames < old_score) {
