@@ -33,6 +33,12 @@ float quickread() {
     return x;
 }
 
+double env_float(const char *name, double df) {
+    char *s = getenv(name);
+    if (!s) return df;
+    return atof(s);
+}
+
 const float EPS = 1e-6;
 
 static mt19937 rng(7641206241ll);
@@ -478,6 +484,210 @@ void solve_greedy(Answer &ans) {
     }
 }
 
+// visit timeslots from least crowded to most crowded
+void solve_dp(Answer &ans) {
+    vector<pair<int, vector<int>>> time_order(T);
+    rep(t, T) time_order[t].first = t;
+    rep(j, J) {
+        Frame f = F[j];
+        repx(t, f.l, f.r) time_order[t].second.push_back(j);
+    }
+
+    sort(time_order.begin(), time_order.end(), [](auto &a, auto &b) {
+        return a.second.size() < b.second.size();
+    });
+
+    // interference values are approximated, therefore the solver cannot shoot at the exact number of bits for each frame
+    // however, we have a worst-case upper bound on the amount that the approximation can be off: by e^(-Dmin) bits per cell
+    // anyway, its best to use an empirically best value
+    // TODO: for each t-r-k we can know exactly what is the minimum D-value, but T*R*K*N^2 time is too slow (?)
+    float approx_d = env_float("APPROX_D", 7.4);
+
+    // bonus associated with completing a frame in a band
+    float completion_bonus = env_float("COMPLETION_BONUS", 4);
+
+    vector<float> transmitted(J);
+    for (auto [t, js] : time_order) {
+        // assign time slot t to frames js
+
+        // assign the R bands in time t in all cells between frames js
+        int jcnt = js.size();
+        if (jcnt == 0) continue;
+        // cerr << "assigning " << jcnt << " users in time " << t << endl;
+
+        // keep track of partial scores
+        static float logsum[10][100];
+        static int rcount[10][100];
+        static float partialscore[100];
+        rep(k, K) rep(jj, jcnt) logsum[k][jj] = 0;
+        rep(k, K) rep(jj, jcnt) rcount[k][jj] = 0;
+        rep(jj, jcnt) partialscore[jj] = 0;
+
+        // go band by band assigning frames
+        rep(r, R) {
+            // cerr << "  assigning band " << r << endl;
+            // assign the best frames in every cell
+            /*int cell_user[10];
+            rep(k, K) {
+                float best = 0;
+                int best_jj = -1;
+                rep(jj, jcnt) {
+                    Frame f = F[js[jj]];
+
+                    // check if the frame is done already
+                    float bits = transmitted[js[jj]] + partialscore[jj];
+                    if (W * bits > f.thresh) continue;
+
+                    if (S0[t][r][k][f.user] > best) {
+                        best = S0[t][r][k][f.user];
+                        best_jj = jj;
+                    }
+                }
+                cell_user[k] = best_jj;
+            }*/
+
+            // we want to assign the cells in this band to different users, maximizing the amount of score won
+            // in order to do this, for each user we will consider all partitions of cells into two sets, the upper half and the lower half (divided by value of S0)
+            // we will then choose upper halfs from all users such that the sum of scores is maximized
+
+            // store the different score wins for each assignment of users to cells
+            static float edge_score[1024];
+            static int edge_jj[1024];
+            rep(m, (1 << K)) {
+                edge_score[m] = 0;
+                edge_jj[m] = -1;
+            }
+
+            // consider all good assignments of users to cells
+            rep(jj, jcnt) {
+                Frame f = F[js[jj]];
+
+                // get how many bits is this frame missing
+                float bits = transmitted[js[jj]] + partialscore[jj];
+                float missing_bits = max(f.thresh / W - bits + 1e-5f, 0.0f);
+                if (missing_bits == 0) continue;
+
+                // cerr << "    user " << js[jj] << " is missing " << missing_bits << " bits" << endl;
+
+                // sort the cells by goodness for this user
+                int ordered_cells[10];
+                rep(k, K) ordered_cells[k] = k;
+                sort(&ordered_cells[0], &ordered_cells[K], [&](int k1, int k2) {
+                    return S0[t][r][k1][f.user] > S0[t][r][k2][f.user];
+                });
+
+                // consider all partitions of cells into taken and not taken
+                int mask = 0;
+                float base_scoredif = 0;
+                rep(kk, K) {
+                    // consider assigning the kk+1 best cells to this user, and the K-kk worst cells to other users
+                    int k = ordered_cells[kk];
+
+                    // precompute the sum of the K-kk worst cells
+                    float rest = 0;
+                    repx(kk2, kk + 1, K) rest += S0[t][r][ordered_cells[kk2]][f.user] * approx_d;
+
+                    // include all previous base cell scores (see line tagged with `unnecessary`)
+                    if (rcount[k][jj]) base_scoredif -= rcount[k][jj] * log1p(exp(logsum[k][jj] / rcount[k][jj]));
+
+                    // approximate the change in score we would get by assigning the kk+1 best cells to this user
+                    // note that the K-kk worst cells will be assigned to other users (we dont know which)
+                    // approximate the interference with these other users by ignoring the e^(-D) term
+                    // TODO: use an average e^(-D) term instead of fully ignoring it
+                    float bitdif = base_scoredif;
+                    rep(kk2, kk + 1) {
+                        int k2 = ordered_cells[kk2];
+                        float newlogsum = logsum[k2][jj] + log(S0[t][r][k2][f.user] / (1 + rest));
+                        int newrcount = rcount[k2][jj] + 1;
+                        bitdif += newrcount * log1p(exp(newlogsum / newrcount));
+                        // cerr << "approx_d = " << approx_d << ", rest = " << rest << ", newlogsum = " << newlogsum << ", newrcount = " << newrcount << endl;
+                        // unnecessary: this is handled by `base_scoredif`
+                        // scoredif -= rcount[k2][jj] * log1p(exp(logsum[k2][jj] / rcount[k2][jj]));
+                    }
+
+                    // assigning more power than strictly necessary is useless
+                    float scoredif = min(bitdif, missing_bits) / (f.thresh / W);
+                    if (scoredif >= 1) scoredif = completion_bonus;
+                    // scoredif = min(scoredif, estimated_missing_bits) / estimated_missing_bits;
+
+                    // this mask has a bit set for each cell of the kk+1 best cells
+                    mask |= (1 << k);
+
+                    // cerr << "    assigning user " << js[jj] << " to cells " << mask << " has bitwin " << bitdif << ": scorewin " << scoredif << endl;
+
+                    // for each mask, keep the best scoredif and the user associated with it
+                    if (scoredif > edge_score[mask]) {
+                        edge_score[mask] = scoredif;
+                        edge_jj[mask] = jj;
+                    }
+                }
+            }
+
+            // bottom-up dp: for each bitmask (representing a set of cells), calculate the best sum of scoredifs that we can get
+            // in order to do this, consider from each bitmask removing a set of cells (using entries in `edge`)
+            static float dp[1024];
+            static int dp_parent[1024];
+            rep(m, (1 << K)) dp[m] = 0, dp_parent[m] = 0;
+            rep(m, (1 << K)) {
+                for (int edge = m; edge != 0; edge = (edge - 1) & m) {
+                    float newscore = dp[m ^ edge] + edge_score[edge];
+                    if (newscore > dp[m]) dp[m] = newscore, dp_parent[m] = edge;
+                }
+            }
+
+            // determine to which user does each cell go
+            int cell_user[10];
+            rep(k, K) cell_user[k] = -1;
+            int mask = (1 << K) - 1;
+            // cerr << "    checking assignment from dp:" << endl;
+            while (true) {
+                int edge = dp_parent[mask];
+                int jj = edge_jj[edge];
+                if (jj == -1) break;
+                // cerr << "    assigning block with scoredif " << edge_score[edge] << endl;
+                rep(k, K) if ((edge >> k) & 1) {
+                    // cerr << "    assigned cell " << k << " to user " << js[jj] << endl;
+                    cell_user[k] = jj;
+                }
+                mask ^= edge;
+            }
+
+            // update answer and partial scores
+            rep(k, K) {
+                int jj = cell_user[k];
+                if (jj == -1) continue;
+                Frame f = F[js[jj]];
+                ans.P[t][r][k][f.user] = 1;
+
+                float interf2 = 0;
+                rep(k2, K) if (k2 != k && cell_user[k2] != -1) {
+                    int n2 = F[js[cell_user[k2]]].user;
+                    if (n2 != f.user) interf2 += S0[t][r][k2][n2] * exp(-D[r][k2][f.user][n2]);
+                }
+                float s = log(S0[t][r][k][f.user] / (1 + interf2));
+                logsum[k][jj] += s;
+                rcount[k][jj] += 1;
+            }
+
+            // update the partial score for each frame
+            rep(jj, jcnt) {
+                partialscore[jj] = 0;
+                rep(k, K) partialscore[jj] += rcount[k][jj] ? rcount[k][jj] * log1p(exp(logsum[k][jj] / rcount[k][jj])) : 0;
+                if (partialscore[jj] != 0) {
+                    // cerr << "    frame " << js[jj] << " is now at " << W * (transmitted[js[jj]] + partialscore[jj]) << "/" << F[js[jj]].thresh << " bits" << endl;
+                }
+            }
+        }
+
+        // update the overall transmitted bits for all frames
+        rep(jj, jcnt) {
+            transmitted[js[jj]] += partialscore[jj];
+        }
+    }
+
+    cerr << "finished dp with score " << score(ans) << endl;
+}
+
 double anneal_start;
 double anneal_time() {
     return (clock() - anneal_start) / double(start_time + 18 * CLOCKS_PER_SEC / 10 - anneal_start);
@@ -487,7 +697,7 @@ void solve_anneal(AnswerStore &out) {
     ScoreKeep &sf = out.temp();
 
     // start from an interference-free solution
-    solve_greedy(sf.ans);
+    solve_dp(sf.ans);
     sf.resync();
 
     validate(sf.ans);
@@ -509,16 +719,16 @@ void solve_anneal(AnswerStore &out) {
 
         // pick a random destination frame, that needs some bits
         if (sf.missing_frames.values.empty()) break;
-        int j_idx = uniform_int_distribution<int>(0, sf.missing_frames.values.size() - 1)(rng);
+        int j_idx = rng() % sf.missing_frames.values.size();
         int j_dst = sf.missing_frames.values[j_idx];
         // int j_dst = uniform_int_distribution<int>(0, J - 1)(rng);
         int n_dst = F[j_dst].user;
 
         // pick a random time in its lifetime
-        int t = uniform_int_distribution<int>(F[j_dst].l, F[j_dst].r - 1)(rng);
+        int t = F[j_dst].l + rng() % (F[j_dst].r - F[j_dst].l);
 
         // pick a random other active frame at this time
-        int jj_src = uniform_int_distribution<int>(0, pertime[t].size() - 1)(rng);
+        int jj_src = rng() % pertime[t].size();
         int j_src = pertime[t][jj_src];
         if (false && j_dst == j_src) {
             // TODO: maybe disallow moves between the same user
@@ -528,10 +738,10 @@ void solve_anneal(AnswerStore &out) {
         int n_src = F[j_src].user;
 
         // pick a random k
-        int k = uniform_int_distribution<int>(0, K - 1)(rng);
+        int k = rng() % K;
 
         // pick a random destination r
-        int r_dst = uniform_int_distribution<int>(0, R - 1)(rng);
+        int r_dst = rng() % R;
         if (sf.bandpower[t][r_dst][k] + delta > 4) {
             no_r_dst += 1;
             continue;
@@ -545,7 +755,7 @@ void solve_anneal(AnswerStore &out) {
             no_r_src += 1;
             continue;
         }
-        int r_src = r_src_candidates[uniform_int_distribution<int>(0, r_src_count - 1)(rng)];
+        int r_src = r_src_candidates[rng() % r_src_count];
 
         // cerr << "transferring between t=" << t << ", k=" << k << ", from (r=" << r_src << ",n=" << n_src << ",bandpower=" << sf.bandpower[t][r_src][k] << ") to (r=" << r_dst << ",n=" << n_dst << ",bandpower=" << sf.bandpower[t][r_dst][k] << ")" << endl;
 
@@ -558,7 +768,7 @@ void solve_anneal(AnswerStore &out) {
         iters += 1;
 
         // undo operation if it became worse
-        double progress = anneal_time();
+        // double progress = anneal_time();
         accept_prob = 0; // exp(-progress * 30);
         // accept_prob_log += inc;
         if (sf.frames < old_score) {
