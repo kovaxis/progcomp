@@ -47,14 +47,14 @@ struct Frame {
 const float W = 192 / log(2.0);
 
 int N, K, T, R, J;
-float S0[1000][10][10][100]; // t, k, r, n
-float D[10][10][100][100];   // k, r, n1, n2
+float S0[1000][10][10][100]; // t, r, k, n
+float D[10][10][100][100];   // r, k, n1, n2
 Frame F[5000];               // j
 
 vector<pair<int, vector<int>>> time_order;
 
 struct Answer {
-    float P[1000][10][10][100]; // t, k, r, n
+    float P[1000][10][10][100]; // t, r, k, n
 
     Answer() {
         memset(&P, 0, sizeof(P));
@@ -68,22 +68,22 @@ float score_bits(int j, int t, const Answer &ans) {
         int bands = 0;
         float logsum = 0;
         rep(r, R) {
-            if (ans.P[t][k][r][f.user] > 0) {
+            if (ans.P[t][r][k][f.user] > 0) {
                 float interf1 = 0;
                 rep(m, N) if (m != f.user) {
-                    if (ans.P[t][k][r][m] > 0) {
-                        interf1 += D[k][r][f.user][m];
+                    if (ans.P[t][r][k][m] > 0) {
+                        interf1 += D[r][k][f.user][m];
                     }
                 }
 
                 float interf2 = 0;
                 rep(k2, K) if (k2 != k) {
                     rep(n2, N) if (n2 != f.user) {
-                        interf2 += S0[t][k2][r][f.user] * ans.P[t][k2][r][n2] * exp(-D[k2][r][f.user][n2]);
+                        interf2 += S0[t][r][k2][f.user] * ans.P[t][r][k2][n2] * exp(-D[r][k2][f.user][n2]);
                     }
                 }
 
-                logsum += log(S0[t][k][r][f.user] * ans.P[t][k][r][f.user] / (1 + interf2)) + interf1;
+                logsum += log(S0[t][r][k][f.user] * ans.P[t][r][k][f.user] / (1 + interf2)) + interf1;
                 bands += 1;
             }
         }
@@ -109,7 +109,7 @@ float score(const Answer &ans) {
     int frames = score_frames(ans);
 
     float power = 0;
-    rep(t, T) rep(k, K) rep(r, R) rep(n, N) power += ans.P[t][k][r][n];
+    rep(t, T) rep(r, R) rep(k, K) rep(n, N) power += ans.P[t][r][k][n];
 
     return frames - power * 1e-6f;
 }
@@ -135,9 +135,9 @@ struct AnswerStore {
 float score_without_interference(const Answer &ans, int t, int k, int n) {
     int bands = 0;
     float product = 1;
-    rep(r, R) if (ans.P[t][k][r][n] > 0) {
+    rep(r, R) if (ans.P[t][r][k][n] > 0) {
         bands += 1;
-        product *= S0[t][k][r][n] * ans.P[t][k][r][n];
+        product *= S0[t][r][k][n] * ans.P[t][r][k][n];
     }
     return bands * log1p(powf(product, 1.0f / bands));
 }
@@ -156,7 +156,7 @@ void solve_naive(AnswerStore &out) {
             used[t] = true;
             rep(r, R) {
                 rep(k, K) {
-                    ans.P[t][k][r][f.user] = 1;
+                    ans.P[t][r][k][f.user] = 1;
                 }
             }
             rep(k, K) {
@@ -190,7 +190,7 @@ void solve_tiecells(AnswerStore &out) {
             vector<pair<float, int>> bands(R);
             rep(r, R) {
                 float rank = 1;
-                rep(k, K) rank *= S0[t][k][r][n];
+                rep(k, K) rank *= S0[t][r][k][n];
                 bands[r] = {-rank, r}; // TODO: try other heuristics
             }
             sort(bands.begin(), bands.end());
@@ -211,7 +211,7 @@ void solve_tiecells(AnswerStore &out) {
                 for (auto [_, r] : bands)
                     if (!assigned[r]) {
                         // assign all cells of r to user n
-                        rep(k, K) ans.P[t][k][r][n] = 1;
+                        rep(k, K) ans.P[t][r][k][n] = 1;
 
                         assigned[r] = true;
                         break;
@@ -255,12 +255,12 @@ void solve_tiecells_fine(AnswerStore &out) {
                 return bands * log1p(exp(logsum / bands));
             }
 
-            float increase(int t, int k, int r, int n) {
+            float increase(int t, int r, int k, int n) {
                 float oldscore = score();
                 int oldbands = bands;
                 float oldlogsum = logsum;
                 bands += 1;
-                logsum += log(S0[t][k][r][n]);
+                logsum += log(S0[t][r][k][n]);
                 float inc = score() - oldscore;
                 if (inc > 0) {
                     return inc;
@@ -293,7 +293,7 @@ void solve_tiecells_fine(AnswerStore &out) {
                     rep(k, K) {
                         UserCell &uc = user_cell[jj][k];
                         UserCell nuc = uc;
-                        scorewin += nuc.increase(t, k, r, f.user);
+                        scorewin += nuc.increase(t, r, k, f.user);
                     }
                     scorewin /= (f.thresh - W * curbits + 0.1); // greedily try to finish frames as quickly as possible
                     cerr << "  band " << r << " to user " << f.user << " has scorewin " << scorewin << endl;
@@ -313,8 +313,8 @@ void solve_tiecells_fine(AnswerStore &out) {
             assigned[best_r] = true;
             rep(k, K) {
                 UserCell &uc = user_cell[best_jj][k];
-                if (uc.increase(t, k, best_r, f.user) > 0) {
-                    ans.P[t][k][best_r][f.user] = 1;
+                if (uc.increase(t, best_r, k, f.user) > 0) {
+                    ans.P[t][best_r][k][f.user] = 1;
                 }
             }
         }
@@ -342,12 +342,6 @@ void solve_interference(AnswerStore &out) {
 
     // bonus associated with completing a frame in a band
     float completion_bonus = env_float("COMPLETION_BONUS", 4);
-
-    // determine the pairs of users with low interference
-    vector<vector<vector<float>>> interf_score(R, vector<vector<float>>(N, vector<float>(N)));
-    rep(r, R) rep(n1, N) rep(n2, N) {
-        rep(k, K) interf_score[r][n1][n2] += D[k][r][n1][n2];
-    }
 
     vector<float> transmitted(J);
     for (auto [t, js] : time_order) {
@@ -381,8 +375,8 @@ void solve_interference(AnswerStore &out) {
                     float bits = transmitted[js[jj]] + partialscore[jj];
                     if (W * bits > f.thresh) continue;
 
-                    if (S0[t][k][r][f.user] > best) {
-                        best = S0[t][k][r][f.user];
+                    if (S0[t][r][k][f.user] > best) {
+                        best = S0[t][r][k][f.user];
                         best_jj = jj;
                     }
                 }
@@ -416,7 +410,7 @@ void solve_interference(AnswerStore &out) {
                 int ordered_cells[10];
                 rep(k, K) ordered_cells[k] = k;
                 sort(&ordered_cells[0], &ordered_cells[K], [&](int k1, int k2) {
-                    return S0[t][k1][r][f.user] > S0[t][k2][r][f.user];
+                    return S0[t][r][k1][f.user] > S0[t][r][k2][f.user];
                 });
 
                 // consider all partitions of cells into taken and not taken
@@ -428,7 +422,7 @@ void solve_interference(AnswerStore &out) {
 
                     // precompute the sum of the K-kk worst cells
                     float rest = 0;
-                    repx(kk2, kk + 1, K) rest += S0[t][ordered_cells[kk2]][r][f.user] * approx_d;
+                    repx(kk2, kk + 1, K) rest += S0[t][r][ordered_cells[kk2]][f.user] * approx_d;
 
                     // include all previous base cell scores (see line tagged with `unnecessary`)
                     if (rcount[k][jj]) base_scoredif -= rcount[k][jj] * log1p(exp(logsum[k][jj] / rcount[k][jj]));
@@ -440,7 +434,7 @@ void solve_interference(AnswerStore &out) {
                     float bitdif = base_scoredif;
                     rep(kk2, kk + 1) {
                         int k2 = ordered_cells[kk2];
-                        float newlogsum = logsum[k2][jj] + log(S0[t][k2][r][f.user] / (1 + rest));
+                        float newlogsum = logsum[k2][jj] + log(S0[t][r][k2][f.user] / (1 + rest));
                         int newrcount = rcount[k2][jj] + 1;
                         bitdif += newrcount * log1p(exp(newlogsum / newrcount));
                         // unnecessary: this is handled by `base_scoredif`
@@ -499,14 +493,14 @@ void solve_interference(AnswerStore &out) {
                 int jj = cell_user[k];
                 if (jj == -1) continue;
                 Frame f = F[js[jj]];
-                ans.P[t][k][r][f.user] = 1;
+                ans.P[t][r][k][f.user] = 1;
 
                 float interf2 = 0;
                 rep(k2, K) if (k2 != k && cell_user[k2] != -1) {
                     int n2 = F[js[cell_user[k2]]].user;
-                    if (n2 != f.user) interf2 += S0[t][k2][r][n2] * exp(-D[k2][r][f.user][n2]);
+                    if (n2 != f.user) interf2 += S0[t][r][k2][n2] * exp(-D[r][k2][f.user][n2]);
                 }
-                float s = log(S0[t][k][r][f.user] / (1 + interf2));
+                float s = log(S0[t][r][k][f.user] / (1 + interf2));
                 logsum[k][jj] += s;
                 rcount[k][jj] += 1;
             }
@@ -553,7 +547,7 @@ void solve_percell(AnswerStore &out, float alpha) {
 
                 vector<pair<float, int>> bands(R);
                 rep(r, R) {
-                    bands[r] = {-S0[t][k][r][n], r};
+                    bands[r] = {-S0[t][r][k][n], r};
                 }
                 sort(bands.begin(), bands.end());
                 bands_per_user.push_back(bands);
@@ -579,11 +573,11 @@ void solve_percell(AnswerStore &out, float alpha) {
                         if (!assigned[r]) {
                             // check what would be the new score be
                             int new_rcount = rcount + 1;
-                            float new_logsum = logsum + log(S0[t][k][r][n]);
+                            float new_logsum = logsum + log(S0[t][r][k][n]);
                             float new_score = new_rcount * log1p(exp(new_logsum / new_rcount));
                             if (new_score > old_score) {
                                 // keep it
-                                ans.P[t][k][r][n] = 1;
+                                ans.P[t][r][k][n] = 1;
                                 assigned[r] = true;
 
                                 rcount = new_rcount;
@@ -612,7 +606,7 @@ float monopolize_timeslot(Answer *ans, int t, int j) {
         // sort bands from best to worst
         vector<pair<float, int>> bands(R);
         rep(r, R) {
-            bands[r] = {-S0[t][k][r][f.user], r};
+            bands[r] = {-S0[t][r][k][f.user], r};
         }
         sort(bands.begin(), bands.end());
 
@@ -621,14 +615,14 @@ float monopolize_timeslot(Answer *ans, int t, int j) {
         int rcount = 0;
         float score = 0;
         for (auto [_, r] : bands) {
-            float newlogsum = logsum + log(S0[t][k][r][f.user]);
+            float newlogsum = logsum + log(S0[t][r][k][f.user]);
             int newrcount = rcount + 1;
             float newscore = newrcount * log1p(exp(newlogsum / newrcount));
             if (newscore > score) {
                 logsum = newlogsum;
                 rcount = newrcount;
                 score = newscore;
-                if (ans) ans->P[t][k][r][f.user] = 1;
+                if (ans) ans->P[t][r][k][f.user] = 1;
             }
         }
 
@@ -638,8 +632,8 @@ float monopolize_timeslot(Answer *ans, int t, int j) {
             score += log(adj_p);
             if (ans) {
                 rep(r, R) {
-                    if (ans->P[t][k][r][f.user] != 0) {
-                        ans->P[t][k][r][f.user] = adj_p;
+                    if (ans->P[t][r][k][f.user] != 0) {
+                        ans->P[t][r][k][f.user] = adj_p;
                     }
                 }
             }
@@ -719,9 +713,9 @@ void metasolve_with_beta(float beta, AnswerStore &out) {
     time_order_counts();
 
     // Try different solutions
-    solve_percell(out, 0.51);
+    // solve_percell(out, 0.51);
     // solve_tiecells(out); // better only in very few cases
-    // solve_tiecells_fine(out);
+    solve_tiecells_fine(out);
     solve_interference(out);
 
     J = realJ;
@@ -732,8 +726,8 @@ int main() {
 
     // Read input
     cin >> N >> K >> T >> R;
-    rep(t, T) rep(k, K) rep(r, R) rep(n, N) S0[t][k][r][n] = quickread();
-    rep(k, K) rep(r, R) rep(m, N) rep(n, N) D[k][r][m][n] = quickread();
+    rep(t, T) rep(k, K) rep(r, R) rep(n, N) S0[t][r][k][n] = quickread();
+    rep(k, K) rep(r, R) rep(m, N) rep(n, N) D[r][k][m][n] = quickread();
     cin >> J;
     rep(j, J) {
         int _j, s, u, l, d;
@@ -760,7 +754,7 @@ int main() {
     // Print output
     cout << fixed << setprecision(10);
     rep(t, T) rep(k, K) rep(r, R) {
-        rep(n, N) cout << ans.P[t][k][r][n] << " ";
+        rep(n, N) cout << ans.P[t][r][k][n] << " ";
         cout << "\n";
     }
 
