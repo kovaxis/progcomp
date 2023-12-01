@@ -34,12 +34,16 @@ D: np.ndarray
 J: int
 F: list[Frame]
 
+W: float
+THRESH: np.ndarray
+PERTIME: list[list[int]]
+
 
 def parse_data(data: str):
     """
     Parse data.
     """
-    global N, K, T, R, S0, D, J, F, P
+    global N, K, T, R, S0, D, J, F, P, W, THRESH, PERTIME
 
     args = data.split()
 
@@ -70,16 +74,16 @@ def parse_data(data: str):
         P = np.zeros((T, K, R, N))
     assert len(args) == 0
 
+    W = 192 / math.log(2)
+    THRESH = np.array([f.thresh / W for f in F])
+
+    PERTIME = [[] for t in range(T)]
+    for f in F:
+        for t in range(f.left, f.right):
+            PERTIME[t].append(f.id)
+
 
 parse_data(sys.stdin.read())
-W = 192 / math.log(2)
-THRESH: np.ndarray = np.array([f.thresh / W for f in F])
-
-
-PERTIME: list[list[int]] = [[] for t in range(T)]
-for f in F:
-    for t in range(f.left, f.right):
-        PERTIME[t].append(f.id)
 
 
 @dataclass
@@ -223,7 +227,7 @@ class Mode:
     axes: str
 
     def __init__(self, axes: str):
-        assert len(axes) == 4
+        assert len(axes) >= 4
         self.axes = axes
         self.x_max = self.axis_size(axes[0]) - 1
         self.y_max = self.axis_size(axes[1]) - 1
@@ -232,13 +236,8 @@ class Mode:
     def axis_index(self, axis: str) -> int:
         return self.axes.index(axis)
 
-    def known_axes(self) -> tuple[int | None, int | None, int | None, int | None]:
-        return (
-            app.get_axis(self.axes[0]),
-            app.get_axis(self.axes[1]),
-            app.get_axis(self.axes[2]),
-            app.get_axis(self.axes[3]),
-        )
+    def known_axes(self) -> list[int | None]:
+        return [app.get_axis(axis) for axis in self.axes]
 
     def axis_size(self, axis: str):
         if axis == "t":
@@ -247,14 +246,10 @@ class Mode:
             return K
         elif axis == "r":
             return R
-        elif axis == "n":
+        elif axis == "j" or axis == "i":
             return len(PERTIME[app.t])
-
-    def map_axes(self, x: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
-        y = {}
-        for i, c in enumerate(self.axes):
-            y[c] = x[i]
-        return y["t"], y["k"], y["r"], y["n"]
+        elif axis == "n" or axis == "m":
+            return N
 
     def onkey(self, key: int, is_down: bool):
         down = pg.key.get_pressed()
@@ -290,14 +285,31 @@ class Mode:
                         app.get_axis(self.axes[1]) + d, self.axis_size(self.axes[1]) - 1
                     ),
                 )
+            if len(self.axes) >= 5:
+                if key == pg.K_j:
+                    app.set_axis(self.axes[4], max(app.get_axis(self.axes[4]) - d, 0))
+                if key == pg.K_k:
+                    app.set_axis(
+                        self.axes[4],
+                        min(
+                            app.get_axis(self.axes[4]) + d,
+                            self.axis_size(self.axes[4]) - 1,
+                        ),
+                    )
 
     def onmouse(self, x: float, y: float, button: int, is_down: bool):
         pass
 
     def draw(self, scr: pg.Surface, sz: np.ndarray):
+        for ax in range(len(self.axes)):
+            if ax == 2 or ax == 3:
+                continue
+            if app.get_axis(self.axes[ax]) is None:
+                app.set_axis(self.axes[ax], 0)
+
         W, H = self.axis_size(self.axes[2]), self.axis_size(self.axes[3])
 
-        pixelsize = np.round(sz * 0.6 / [W, H])
+        pixelsize = np.round(sz * 0.75 / [W, H])
         fullsize = pixelsize * [W, H]
 
         def stretch(x: float, y: float) -> tuple[int, int]:
@@ -314,53 +326,46 @@ class Mode:
                 if collide:
                     app.set_axis(self.axes[2], x)
                     app.set_axis(self.axes[3], y)
-                self.drawpixel(
-                    scr,
-                    rect,
-                    collide,
-                    (app.get_axis(self.axes[0]), app.get_axis(self.axes[1]), x, y),
-                )
+                values = [app.get_axis(axis) for axis in self.axes]
+                values[2] = x
+                values[3] = y
+                self.drawpixel(scr, rect, collide, values)
 
         txt = TextRenderer(scr=scr, x=10, y=10)
 
         for y in range(H):
             txt.relocate(stretch(0, y + 0.5) - [10, FONTSIZE])
             txt.align = 1
-            self.label_axis(
-                3,
-                [
-                    app.get_axis(self.axes[0]),
-                    app.get_axis(self.axes[1]),
-                    None,
-                    y,
-                ],
-                txt,
-            )
+            values = [app.get_axis(axis) for axis in self.axes]
+            values[2] = None
+            values[3] = y
+            self.label_axis(3, values, txt)
         for x in range(W):
             txt.relocate(stretch(x + 0.5, 0) - [0, 2 * FONTSIZE])
             txt.align = 0.5
-            self.label_axis(
-                2,
-                [app.get_axis(self.axes[0]), app.get_axis(self.axes[1]), x, None],
-                txt,
-            )
+            values = [app.get_axis(axis) for axis in self.axes]
+            values[2] = x
+            values[3] = None
+            self.label_axis(2, values, txt)
 
         txt.relocate((10, 10))
         txt.align = 0
         self.draw_text(scr, txt)
 
+
+class ModeS(Mode):
     def drawpixel(
         self,
         scr: pg.Surface,
         rect: pg.Rect,
         collide: bool,
-        values: tuple[int, int, int, int],
+        values: list[int],
     ):
         t, k, r, jj = (
             values[self.axis_index("t")],
             values[self.axis_index("k")],
             values[self.axis_index("r")],
-            values[self.axis_index("n")],
+            values[self.axis_index("j")],
         )
         j = PERTIME[t][jj]
         n = F[j].user
@@ -393,18 +398,20 @@ class Mode:
                     setp(t, k, r, n, p)
 
     def draw_text(self, scr: pg.Surface, txt: TextRenderer):
-        txt.print("S0(nk)")
+        txt.print("S0")
         self.short_label_axis(0, txt)
         self.short_label_axis(1, txt)
         self.short_label_axis(2, txt)
         self.short_label_axis(3, txt)
-        t, k, r, n = (
+        t, k, r, jj = (
             app.get_axis("t"),
             app.get_axis("k"),
             app.get_axis("r"),
-            app.get_axis("n"),
+            app.get_axis("j"),
         )
-        if t is not None and k is not None and r is not None and n is not None:
+        if t is not None and k is not None and r is not None and jj is not None:
+            j = PERTIME[t][jj]
+            n = F[j].user
             hovertxt = f"{S0[t,k,r,n]}"
         else:
             hovertxt = ""
@@ -421,7 +428,7 @@ class Mode:
         elif axis == "r":
             r = values[self.axis_index("r")]
             txt.print(f"r = {r}")
-        elif axis == "n":
+        elif axis == "j":
             t = values[self.axis_index("t")]
             jj = values[axis_idx]
             j = PERTIME[t][jj]
@@ -441,16 +448,105 @@ class Mode:
             value = app.get_axis(axis)
             txt.print(f"{axis} = {value}/{self.axis_size(axis)}")
         else:
+            axis_name = axis
+            if axis_name == "j":
+                axis_name = "n"
             screen_axis = "xy"[axis_idx - 2]
             txt.print(
-                f"{screen_axis}-axis: {axis} ({axis.upper()} = {self.axis_size(axis)})"
+                f"{screen_axis}-axis: {axis_name} ({axis_name.upper()} = {self.axis_size(axis)})"
             )
+
+
+class ModeD(Mode):
+    def get_nn(self, values: list[int]) -> tuple[int | None, int | None]:
+        if "j" in self.axes:
+            t = values[self.axis_index("t")]
+            jj1, jj2 = values[self.axis_index("j")], values[self.axis_index("i")]
+            if jj1 is None or jj2 is None or t is None:
+                return None, None
+            j1, j2 = PERTIME[t][jj1], PERTIME[t][jj2]
+            return F[j1].user, F[j2].user
+        else:
+            return values[self.axis_index("n")], values[self.axis_index("m")]
+
+    def drawpixel(
+        self,
+        scr: pg.Surface,
+        rect: pg.Rect,
+        collide: bool,
+        values: list[int],
+    ):
+        k, r = (
+            values[self.axis_index("k")],
+            values[self.axis_index("r")],
+        )
+        n1, n2 = self.get_nn(values)
+        d = D[k, r, n1, n2]
+
+        b = 240
+        v = b + d * 100
+        pg.draw.rect(scr, (b, v, v), rect)
+        pg.draw.rect(scr, (b - 20, v - 20, v - 20), rect, width=1)
+
+    def draw_text(self, scr: pg.Surface, txt: TextRenderer):
+        txt.print("D")
+        if len(self.axes) >= 5:
+            self.short_label_axis(4, txt)
+        self.short_label_axis(0, txt)
+        self.short_label_axis(1, txt)
+        self.short_label_axis(2, txt)
+        self.short_label_axis(3, txt)
+        k, r = (
+            app.get_axis("k"),
+            app.get_axis("r"),
+        )
+        n1, n2 = self.get_nn(self.known_axes())
+        if k is not None and r is not None and n1 is not None and n2 is not None:
+            hovertxt = f"{D[k,r,n1,n2]}"
+        else:
+            hovertxt = ""
+        txt.print(f"hovered d: {hovertxt}")
+        txt.print(f"score: {SCORE.frames}")
+
+    def label_axis(self, axis_idx: int, values: list[int | None], txt: TextRenderer):
+        axis = self.axes[axis_idx]
+        if axis == "k":
+            k = values[axis_idx]
+            txt.print(f"k = {k}")
+        elif axis == "r":
+            r = values[axis_idx]
+            txt.print(f"r = {r}")
+        elif axis == "i" or axis == "j":
+            t = values[self.axis_index("t")]
+            jj = values[axis_idx]
+            j = PERTIME[t][jj]
+            n = F[j].user
+            txt.print(f"{n}")
+        elif axis == "n" or axis == "m":
+            n = values[axis_idx]
+            txt.print(f"{n}")
+
+    def short_label_axis(self, axis_idx: int, txt: TextRenderer):
+        axis = self.axes[axis_idx]
+        if axis_idx in (2, 3):
+            axis_name = axis
+            if axis_name == "j":
+                axis_name = "n"
+            elif axis_name == "i":
+                axis_name = "m"
+            screen_axis = "xy"[axis_idx - 2]
+            txt.print(
+                f"{screen_axis}-axis: {axis_name} ({axis_name.upper()} = {self.axis_size(axis)})"
+            )
+        else:
+            value = app.get_axis(axis)
+            txt.print(f"{axis} = {value}/{self.axis_size(axis)}")
 
 
 MODES = ["s0", "d"]
 SUBMODES = {
     "s0": ["kn", "rn"],
-    "d": ["nm"],
+    "d": ["nm", "ji"],
 }
 
 
@@ -459,7 +555,10 @@ class State:
     t: int | None = 0
     k: int | None = 0
     r: int | None = 0
+    j: int | None = 0
+    i: int | None = 0
     n: int | None = 0
+    m: int | None = 0
 
     mode: str = MODES[0]
     submodes: dict[str, str] = field(
@@ -483,11 +582,12 @@ app_running = True
 app = State()
 app_mode = {
     "s0": {
-        "kn": Mode("trnk"),
-        "rn": Mode("tknr"),
+        "kn": ModeS("trjk"),
+        "rn": ModeS("tkjr"),
     },
     "d": {
-        "nm": Mode("rknn"),
+        "nm": ModeD("rknm"),
+        "ji": ModeD("rkjit"),
     },
 }
 
