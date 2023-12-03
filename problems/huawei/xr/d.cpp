@@ -734,7 +734,45 @@ void solve_dp(AnswerPerTime &anspt) {
     anspt.update();
 }
 
-void solve_heuristic(Answer &ans) {
+// go band-by-band assigning power
+// for each band, concentrate all power in a single cell
+// we will try all cells to see which works best, so assume we have chosen a fixed cell
+// check the effect of assigning all users, and keep whichever works best
+// repeat this until the effect of adding a user is negative (this should happen relatively early)
+void solve_crammed(AnswerPerTime &anspt) {
+    int t = anspt.t;
+    const vector<int> &js = pertime[t];
+    int jcnt = js.size();
+    SubAnswer &ans = anspt.temp();
+
+    float kn_logsum[10][100];
+    int kn_rcount[10][100];
+    int k_rcount[10];
+    int rk_ncount[10][10];
+    rep(k, K) rep(jj, jcnt) kn_logsum[k][jj] = 0;
+    rep(k, K) rep(jj, jcnt) kn_rcount[k][jj] = 0;
+    rep(k, K) k_rcount[k] = 0;
+    rep(r, R) rep(k, K) rk_ncount[r][k] = 0;
+
+    vector<int> band_order(R);
+    rep(r, R) band_order[r] = r;
+    shuffle(band_order.begin(), band_order.end(), rng);
+    for (int r : band_order) {
+        rep(k, K) {
+            while (true) {
+                float best_scoredif = 0;
+                rep(jj, jcnt) {
+                    // check the effect of adding user jj to cell k
+                    // this will modify
+                }
+            }
+        }
+    }
+
+    anspt.update();
+}
+
+void solve_seed(Answer &ans) {
     // go time-by-time using a few methods for each time
 
     vector<int> time_order(T);
@@ -762,8 +800,8 @@ double anneal_time() {
 void solve_anneal(AnswerStore &out) {
     ScoreKeep &sf = out.temp();
 
-    // start from an heuristic solution
-    solve_heuristic(sf.ans);
+    // start from a seed solution
+    solve_seed(sf.ans);
     sf.resync();
 
     validate(sf.ans);
@@ -774,9 +812,12 @@ void solve_anneal(AnswerStore &out) {
     double accept_prob = 1;
     double inc = -3e-5;
     // rep(_iter, 600000) {
-    while (anneal_time() < 1) {
+    while (true) {
         // choose a random perturbation
+        double now = anneal_time();
+        if (now > 1) break;
         float delta = 1;
+        if (now > 0.8) delta = 0.5;
 
         // pick a random destination frame, that needs some bits
         if (sf.missing_frames.values.empty()) {
