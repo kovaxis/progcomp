@@ -39,6 +39,21 @@ double env_float(const char *name, double df) {
     return atof(s);
 }
 
+double cpu_time() {
+#if defined(_WIN32) || defined(_WIN64)
+    FILETIME creation_ft, exit_ft, kernel_ft, user_ft;
+    GetProcessTimes(GetCurrentProcess(), &creation_ft, &exit_ft, &kernel_ft, &user_ft);
+
+    auto extract_time = [](FILETIME ft) {
+        return 1e-7 * (ft.dwLowDateTime | uint64_t(ft.dwHighDateTime) << 32);
+    };
+
+    return extract_time(user_ft) + extract_time(kernel_ft);
+#else
+    return (double)clock() / CLOCKS_PER_SEC;
+#endif
+}
+
 const float EPS = 1e-6;
 
 static mt19937 rng(7641206241ll);
@@ -51,8 +66,6 @@ struct Frame {
 };
 
 const float W = 192 / log(2.0);
-
-clock_t start_time;
 
 int N, K, T, R, J;
 float S0[1000][10][10][100]; // t, r, k, n
@@ -759,11 +772,11 @@ void solve_crammed(AnswerPerTime &anspt) {
     shuffle(band_order.begin(), band_order.end(), rng);
     for (int r : band_order) {
         rep(k, K) {
-            while (true) {
+            while (true) { // this can run at most N times, and hopefully/usually much less
                 float best_scoredif = 0;
                 rep(jj, jcnt) {
                     // check the effect of adding user jj to cell k
-                    // this will modify
+                    // this will modify the score of all cells in
                 }
             }
         }
@@ -794,20 +807,18 @@ void solve_seed(Answer &ans) {
 
 double anneal_start;
 double anneal_time() {
-    return (clock() - anneal_start) / double(start_time + 18 * CLOCKS_PER_SEC / 10 - anneal_start);
+    return (cpu_time() - anneal_start) / (1.8 - anneal_start);
 }
 
 void solve_anneal(AnswerStore &out) {
     ScoreKeep &sf = out.temp();
 
     // start from a seed solution
-    solve_seed(sf.ans);
-    sf.resync();
+    // solve_seed(sf.ans);
+    // sf.resync();
 
-    validate(sf.ans);
+    anneal_start = cpu_time();
 
-    anneal_start = clock();
-    cerr << (start_time + 1.8 * CLOCKS_PER_SEC - clock()) / (double)CLOCKS_PER_SEC << " seconds left" << endl;
     int iters = 0, no_r_src = 0, no_j_src = 0, no_r_dst = 0;
     double accept_prob = 1;
     double inc = -3e-5;
@@ -895,7 +906,6 @@ void solve_anneal(AnswerStore &out) {
 }
 
 int main() {
-    start_time = clock();
     ios::sync_with_stdio(0), cin.tie(0);
 
     // Read input
