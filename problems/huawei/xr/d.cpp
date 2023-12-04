@@ -1,5 +1,8 @@
 #pragma GCC optimize("Ofast")
 #include <bits/stdc++.h>
+#if defined(_WIN32) || defined(_WIN64)
+#include <Windows.h>
+#endif
 using namespace std;
 
 typedef long long ll;
@@ -8,6 +11,8 @@ typedef long long ll;
 #define rep(i, n) repx(i, 0, n)
 #define invrepx(i, a, b) for (int i = b - 1; i >= a; i--)
 #define invrep(i, n) invrepx(i, 0, n)
+
+// #define float double
 
 #ifndef ENABLE_CERR
 #define cerr \
@@ -31,6 +36,27 @@ float quickread() {
     while (*c) mult *= 0.1, x += mult * (*c - '0'), c++;
     if (neg) x = -x;
     return x;
+}
+
+void quickwrite(float x) {
+    static string s;
+    s.clear();
+    int y = abs(x);
+    float z = abs(x) - y;
+    do {
+        s.push_back('0' + y % 10), y /= 10;
+    } while (y);
+    if (x < 0) s.push_back('-');
+    reverse(s.begin(), s.end());
+    s.push_back('.');
+    rep(d, 6) {
+        z *= 10;
+        int w = z;
+        z -= w;
+        s.push_back('0' + w);
+    }
+    s.push_back(' ');
+    cout << s;
 }
 
 double env_float(const char *name, double df) {
@@ -132,7 +158,7 @@ float score_bits(int j, int t, const SubAnswer &ans) {
     Frame f = F[j];
     rep(k, K) {
         int bands = 0;
-        float logsum = 0;
+        float prod = 1;
         rep(r, R) {
             if (ans.P[r][k][f.user] > 0) {
                 float interf1 = 0;
@@ -149,11 +175,11 @@ float score_bits(int j, int t, const SubAnswer &ans) {
                     }
                 }
 
-                logsum += log(S0[t][r][k][f.user] * ans.P[r][k][f.user] / (1 + interf2)) + interf1;
+                prod *= S0[t][r][k][f.user] * ans.P[r][k][f.user] * exp(interf1) / (1 + interf2);
                 bands += 1;
             }
         }
-        if (bands != 0) transmitted += bands * log1p(exp(logsum / bands));
+        if (bands != 0) transmitted += bands * log1p(powf(prod, float(1.0) / bands));
     }
     return transmitted;
 }
@@ -195,7 +221,7 @@ struct AnswerPerTime {
             float bits = score_bits(j, t, *tmp);
             thispartial[jj] = bits;
             frames += (W * (transmitted[j] + bits) >= F[j].thresh);
-            bitsum += max(min(bits, F[j].thresh / W - transmitted[j]), 0.0f);
+            bitsum += max(min(bits, F[j].thresh / W - transmitted[j]), (float)0.0);
         }
         if (frames > cur_frames || (frames == cur_frames && bitsum > cur_bitsum)) {
             ans->sub(t) = *tmp;
@@ -225,7 +251,7 @@ float score(const Answer &ans) {
     float power = 0;
     rep(t, T) rep(r, R) rep(k, K) rep(n, N) power += ans.P[t][r][k][n];
 
-    return frames - power * 1e-6f;
+    return frames - power * (float)1e-6;
 }
 
 template <class T>
@@ -283,7 +309,7 @@ struct SlowSet {
 struct ScoreKeep {
     Answer ans;
     float interf2[1000][10][10][100];              // t, r, k, n
-    float logsum[1000][10][100];                   // t, k, n
+    float prod[1000][10][100];                     // t, k, n
     int8_t rcount[1000][10][100];                  // t, k, n
     float G[5000];                                 // j
     vector<pair<int8_t, int8_t>> active[1000][10]; // t, r -> k, n
@@ -307,7 +333,7 @@ struct ScoreKeep {
     // reset the score, keeping the answer intact
     void reset_score() {
         memzero(interf2);
-        memzero(logsum);
+        rep(t, T) rep(k, K) rep(n, N) prod[t][k][n] = 1;
         memzero(rcount);
         memzero(G);
         rep(t, 1000) rep(r, 10) active[t][r].clear();
@@ -342,14 +368,14 @@ struct ScoreKeep {
                                 }
                             }
 
-                            logsum[t][k][n] += log(S0[t][r][k][n] * ans.P[t][r][k][n] / (1 + interf2[t][r][k][n])) + interf1;
+                            prod[t][k][n] *= S0[t][r][k][n] * ans.P[t][r][k][n] * exp(interf1) / (1 + interf2[t][r][k][n]);
                             rcount[t][k][n] += 1;
                             active[t][r].push_back({k, n});
 
                             bandpower[t][r][k] += ans.P[t][r][k][n];
                         }
                     }
-                    if (rcount[t][k][f.user] != 0) G[j] += rcount[t][k][n] * log1p(exp(logsum[t][k][n] / rcount[t][k][n]));
+                    if (rcount[t][k][f.user] != 0) G[j] += rcount[t][k][n] * log1p(powf(prod[t][k][n], float(1.0) / rcount[t][k][n]));
                 }
             }
             modify_frame_status(j, W * G[j] - EPS >= f.thresh);
@@ -359,35 +385,35 @@ struct ScoreKeep {
     void set(int t, int r, int k, int n, float p) {
         if (ans.P[t][r][k][n] == p) return;
 
-        float myold_logsum = logsum[t][k][n];
+        float myold_prod = prod[t][k][n];
         int myold_rcount = rcount[t][k][n];
 
         // update type-1 and type-2 interference
         for (auto [k2, n2] : active[t][r])
             if (n2 != n) {
-                float old_logsum = logsum[t][k2][n2];
+                float old_prod = prod[t][k2][n2];
                 if (k2 == k) {
                     // type-1 interference
                     if (p == 0) {
                         // remove type-1 interference from my point and the other
-                        logsum[t][k2][n2] -= D[r][k][n][n2];
-                        logsum[t][k][n] -= D[r][k][n][n2];
+                        prod[t][k2][n2] /= exp(D[r][k][n][n2]);
+                        prod[t][k][n] /= exp(D[r][k][n][n2]);
                     } else if (ans.P[t][r][k][n] == 0) {
                         // add type-1 interference from my point and the other
-                        logsum[t][k2][n2] += D[r][k][n][n2];
-                        logsum[t][k][n] += D[r][k][n][n2];
+                        prod[t][k2][n2] *= exp(D[r][k][n][n2]);
+                        prod[t][k][n] *= exp(D[r][k][n][n2]);
                     }
                 } else {
                     // update type-2 interference on other cells
-                    logsum[t][k2][n2] += log1p(interf2[t][r][k2][n2]);
+                    prod[t][k2][n2] *= (1 + interf2[t][r][k2][n2]);
                     interf2[t][r][k2][n2] += S0[t][r][k][n2] * (p - ans.P[t][r][k][n]) * exp(-D[r][k][n][n2]);
-                    logsum[t][k2][n2] -= log1p(interf2[t][r][k2][n2]);
+                    prod[t][k2][n2] /= (1 + interf2[t][r][k2][n2]);
                 }
 
                 // update the frame scores
                 int j = frameptr[t][n2];
                 int delta = (W * G[j] - EPS >= F[j].thresh);
-                G[j] += rcount[t][k2][n2] * (log1p(exp(logsum[t][k2][n2] / rcount[t][k2][n2])) - log1p(exp(old_logsum / rcount[t][k2][n2])));
+                G[j] += rcount[t][k2][n2] * (log1p(powf(prod[t][k2][n2], float(1.0) / rcount[t][k2][n2])) - log1p(powf(old_prod, float(1.0) / rcount[t][k2][n2])));
                 delta -= (W * G[j] - EPS >= F[j].thresh);
                 modify_frame_status(j, -delta);
             }
@@ -396,7 +422,7 @@ struct ScoreKeep {
             // deactivate this point
 
             // remove myself from my cell
-            logsum[t][k][n] -= log(S0[t][r][k][n] * ans.P[t][r][k][n] / (1 + interf2[t][r][k][n]));
+            prod[t][k][n] *= (1 + interf2[t][r][k][n]) / (S0[t][r][k][n] * ans.P[t][r][k][n]);
             rcount[t][k][n] -= 1;
 
             // mark as inactive
@@ -416,21 +442,21 @@ struct ScoreKeep {
                 }
 
             // add myself to my cell
-            logsum[t][k][n] += log(S0[t][r][k][n] * p / (1 + interf2[t][r][k][n]));
+            prod[t][k][n] *= S0[t][r][k][n] * p / (1 + interf2[t][r][k][n]);
             rcount[t][k][n] += 1;
 
             // mark as active
             active[t][r].push_back({k, n});
         } else {
             // just update my cell score
-            logsum[t][k][n] += log(p / ans.P[t][r][k][n]);
+            prod[t][k][n] *= p / ans.P[t][r][k][n];
         }
 
         // update my frame score
         int j = frameptr[t][n];
         int delta = (W * G[j] - EPS >= F[j].thresh);
-        if (myold_rcount) G[j] -= myold_rcount * log1p(exp(myold_logsum / myold_rcount));
-        if (rcount[t][k][n]) G[j] += rcount[t][k][n] * log1p(exp(logsum[t][k][n] / rcount[t][k][n]));
+        if (myold_rcount) G[j] -= myold_rcount * log1p(powf(myold_prod, float(1.0) / myold_rcount));
+        if (rcount[t][k][n]) G[j] += rcount[t][k][n] * log1p(powf(prod[t][k][n], float(1.0) / rcount[t][k][n]));
         delta -= (W * G[j] - EPS >= F[j].thresh);
         modify_frame_status(j, -delta);
 
@@ -492,19 +518,19 @@ void solve_greedy(AnswerPerTime &anspt) {
     // greedily assign the band that maximizes the score win
     struct UserCell {
         int bands = 0;
-        float logsum = 0;
+        float prod = 1;
 
         float score() const {
             if (bands == 0) return 0;
-            return bands * log1p(exp(logsum / bands));
+            return bands * log1p(powf(prod, float(1.0) / bands));
         }
 
         float increase(int t, int k, int r, int n) {
             float oldscore = score();
             int oldbands = bands;
-            float oldlogsum = logsum;
+            float oldprod = prod;
             bands += 1;
-            logsum += log(S0[t][r][k][n]);
+            prod *= S0[t][r][k][n];
             float inc = score() - oldscore;
             return inc;
         }
@@ -581,10 +607,10 @@ void solve_dp(AnswerPerTime &anspt) {
     // cerr << "assigning " << jcnt << " users in time " << t << endl;
 
     // keep track of partial scores
-    static float logsum[10][100];
+    static float prod[10][100];
     static int rcount[10][100];
     static float partialscore[100];
-    rep(k, K) rep(jj, jcnt) logsum[k][jj] = 0;
+    rep(k, K) rep(jj, jcnt) prod[k][jj] = 1;
     rep(k, K) rep(jj, jcnt) rcount[k][jj] = 0;
     rep(jj, jcnt) partialscore[jj] = 0;
 
@@ -629,7 +655,7 @@ void solve_dp(AnswerPerTime &anspt) {
 
             // get how many bits is this frame missing
             float bits = anspt.transmitted[js[jj]] + partialscore[jj];
-            float missing_bits = max(f.thresh / W - bits + 1e-5f, 0.0f);
+            float missing_bits = max(f.thresh / W - bits + float(1e-5), float(0.0));
             if (missing_bits == 0) continue;
 
             // cerr << "    user " << js[jj] << " is missing " << missing_bits << " bits" << endl;
@@ -653,7 +679,7 @@ void solve_dp(AnswerPerTime &anspt) {
                 repx(kk2, kk + 1, K) rest += S0[t][r][ordered_cells[kk2]][f.user] * approx_d;
 
                 // include all previous base cell scores (see line tagged with `unnecessary`)
-                if (rcount[k][jj]) base_scoredif -= rcount[k][jj] * log1p(exp(logsum[k][jj] / rcount[k][jj]));
+                if (rcount[k][jj]) base_scoredif -= rcount[k][jj] * log1p(powf(prod[k][jj], float(1.0) / rcount[k][jj]));
 
                 // approximate the change in score we would get by assigning the kk+1 best cells to this user
                 // note that the K-kk worst cells will be assigned to other users (we dont know which)
@@ -662,9 +688,9 @@ void solve_dp(AnswerPerTime &anspt) {
                 float bitdif = base_scoredif;
                 rep(kk2, kk + 1) {
                     int k2 = ordered_cells[kk2];
-                    float newlogsum = logsum[k2][jj] + log(S0[t][r][k2][f.user] / (1 + rest));
+                    float newprod = prod[k2][jj] * S0[t][r][k2][f.user] / (1 + rest);
                     int newrcount = rcount[k2][jj] + 1;
-                    bitdif += newrcount * log1p(exp(newlogsum / newrcount));
+                    bitdif += newrcount * log1p(powf(newprod, float(1.0) / newrcount));
                     // cerr << "approx_d = " << approx_d << ", rest = " << rest << ", newlogsum = " << newlogsum << ", newrcount = " << newrcount << endl;
                     // unnecessary: this is handled by `base_scoredif`
                     // scoredif -= rcount[k2][jj] * log1p(exp(logsum[k2][jj] / rcount[k2][jj]));
@@ -729,15 +755,15 @@ void solve_dp(AnswerPerTime &anspt) {
                 int n2 = F[js[cell_user[k2]]].user;
                 if (n2 != f.user) interf2 += S0[t][r][k2][n2] * exp(-D[r][k2][f.user][n2]);
             }
-            float s = log(S0[t][r][k][f.user] / (1 + interf2));
-            logsum[k][jj] += s;
+            float s = S0[t][r][k][f.user] / (1 + interf2);
+            prod[k][jj] *= s;
             rcount[k][jj] += 1;
         }
 
         // update the partial score for each frame
         rep(jj, jcnt) {
             partialscore[jj] = 0;
-            rep(k, K) partialscore[jj] += rcount[k][jj] ? rcount[k][jj] * log1p(exp(logsum[k][jj] / rcount[k][jj])) : 0;
+            rep(k, K) partialscore[jj] += rcount[k][jj] ? rcount[k][jj] * log1p(powf(prod[k][jj], float(1.0) / rcount[k][jj])) : 0;
             if (partialscore[jj] != 0) {
                 // cerr << "    frame " << js[jj] << " is now at " << W * (transmitted[js[jj]] + partialscore[jj]) << "/" << F[js[jj]].thresh << " bits" << endl;
             }
@@ -758,11 +784,11 @@ void solve_crammed(AnswerPerTime &anspt) {
     int jcnt = js.size();
     SubAnswer &ans = anspt.temp();
 
-    float kn_logsum[10][100];
+    float kn_prod[10][100];
     int kn_rcount[10][100];
     int k_rcount[10];
     int rk_ncount[10][10];
-    rep(k, K) rep(jj, jcnt) kn_logsum[k][jj] = 0;
+    rep(k, K) rep(jj, jcnt) kn_prod[k][jj] = 1;
     rep(k, K) rep(jj, jcnt) kn_rcount[k][jj] = 0;
     rep(k, K) k_rcount[k] = 0;
     rep(r, R) rep(k, K) rk_ncount[r][k] = 0;
@@ -785,6 +811,28 @@ void solve_crammed(AnswerPerTime &anspt) {
     anspt.update();
 }
 
+void solve_quick(AnswerPerTime &anspt) {
+    int t = anspt.t;
+    const vector<int> &js = pertime[t];
+    int jcnt = js.size();
+    SubAnswer &ans = anspt.temp();
+
+    // just use the best s0 for each cell/band
+    rep(r, R) rep(k, K) {
+        float best_s0 = 0;
+        int best_n = -1;
+        for (int j : pertime[t]) {
+            int n = F[j].user;
+            if (S0[t][r][k][n] > best_s0) best_s0 = S0[t][r][k][n], best_n = n;
+        }
+        if (best_n != -1) {
+            ans.P[r][k][best_n] = 1;
+        }
+    }
+
+    anspt.update();
+}
+
 void solve_seed(Answer &ans) {
     // go time-by-time using a few methods for each time
 
@@ -800,7 +848,8 @@ void solve_seed(Answer &ans) {
     for (int t : time_order) {
         anspt.begin_time(t);
         solve_greedy(anspt);
-        solve_dp(anspt);
+        solve_quick(anspt);
+        // solve_dp(anspt);
         anspt.end_time();
     }
 }
@@ -814,8 +863,9 @@ void solve_anneal(AnswerStore &out) {
     ScoreKeep &sf = out.temp();
 
     // start from a seed solution
-    // solve_seed(sf.ans);
-    // sf.resync();
+    solve_seed(sf.ans);
+    // seed_quick(sf);
+    sf.resync();
 
     anneal_start = cpu_time();
 
@@ -835,8 +885,8 @@ void solve_anneal(AnswerStore &out) {
             cerr << "reached optimality" << endl;
             break;
         }
-        int j_idx = rng() % sf.missing_frames.values.size();
-        int j_dst = sf.missing_frames.values[j_idx];
+        int j_dst_idx = rng() % sf.missing_frames.values.size();
+        int j_dst = sf.missing_frames.values[j_dst_idx];
         // int j_dst = uniform_int_distribution<int>(0, J - 1)(rng);
         int n_dst = F[j_dst].user;
 
@@ -866,7 +916,7 @@ void solve_anneal(AnswerStore &out) {
         // pick a random source r among those with nonzero value
         int r_src_candidates[10];
         int r_src_count = 0;
-        rep(r, R) if ((j_src != j_dst || r != r_dst) && sf.ans.P[t][r][k][n_src] != 0) r_src_candidates[r_src_count++] = r;
+        rep(r, R) if ((j_src != j_dst || r != r_dst) && sf.ans.P[t][r][k][n_src] >= delta) r_src_candidates[r_src_count++] = r;
         if (r_src_count == 0) {
             no_r_src += 1;
             continue;
@@ -958,7 +1008,7 @@ int main() {
     // Print output
     cout << fixed << setprecision(10);
     rep(t, T) rep(k, K) rep(r, R) {
-        rep(n, N) cout << ans.P[t][r][k][n] << " ";
+        rep(n, N) quickwrite(ans.P[t][r][k][n]);
         cout << "\n";
     }
 
