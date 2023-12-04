@@ -307,6 +307,9 @@ struct SlowSet {
 };
 
 struct ScoreKeep {
+    short frameptr[1000][100]; // t, n
+    int tbs_sum;
+
     Answer ans;
     float interf2[1000][10][10][100];              // t, r, k, n
     float prod[1000][10][100];                     // t, k, n
@@ -314,20 +317,22 @@ struct ScoreKeep {
     float G[5000];                                 // j
     vector<pair<int8_t, int8_t>> active[1000][10]; // t, r -> k, n
     int frames;
+    float total_transmitted;
 
     UnorderedSet<short> missing_frames;
     float bandpower[1000][10][10]; // t, r, k
 
-    short frameptr[1000][100]; // t, n
-
     // reset the entire scorekeep, including the answer, score and auxiliary data
     void reset() {
-        memzero(ans);
-        reset_score();
         memzero(frameptr);
         rep(j, J) {
             repx(t, F[j].l, F[j].r) frameptr[t][F[j].user] = j;
         }
+        tbs_sum = 0;
+        rep(j, J) tbs_sum += F[j].thresh;
+
+        memzero(ans);
+        reset_score();
     }
 
     // reset the score, keeping the answer intact
@@ -338,6 +343,7 @@ struct ScoreKeep {
         memzero(G);
         rep(t, 1000) rep(r, 10) active[t][r].clear();
         frames = 0;
+        total_transmitted = 0;
 
         missing_frames.reset(J);
         rep(j, J) missing_frames.add(j);
@@ -378,6 +384,7 @@ struct ScoreKeep {
                     if (rcount[t][k][f.user] != 0) G[j] += rcount[t][k][n] * log1p(powf(prod[t][k][n], float(1.0) / rcount[t][k][n]));
                 }
             }
+            total_transmitted += min(W * G[j], (float)f.thresh);
             modify_frame_status(j, W * G[j] - EPS >= f.thresh);
         }
     }
@@ -413,8 +420,10 @@ struct ScoreKeep {
                 // update the frame scores
                 int j = frameptr[t][n2];
                 int delta = (W * G[j] - EPS >= F[j].thresh);
+                total_transmitted -= min((float)F[j].thresh, W * G[j]);
                 G[j] += rcount[t][k2][n2] * (log1p(powf(prod[t][k2][n2], float(1.0) / rcount[t][k2][n2])) - log1p(powf(old_prod, float(1.0) / rcount[t][k2][n2])));
                 delta -= (W * G[j] - EPS >= F[j].thresh);
+                total_transmitted += min((float)F[j].thresh, W * G[j]);
                 modify_frame_status(j, -delta);
             }
 
@@ -455,9 +464,11 @@ struct ScoreKeep {
         // update my frame score
         int j = frameptr[t][n];
         int delta = (W * G[j] - EPS >= F[j].thresh);
+        total_transmitted -= min((float)F[j].thresh, W * G[j]);
         if (myold_rcount) G[j] -= myold_rcount * log1p(powf(myold_prod, float(1.0) / myold_rcount));
         if (rcount[t][k][n]) G[j] += rcount[t][k][n] * log1p(powf(prod[t][k][n], float(1.0) / rcount[t][k][n]));
         delta -= (W * G[j] - EPS >= F[j].thresh);
+        total_transmitted += min((float)F[j].thresh, W * G[j]);
         modify_frame_status(j, -delta);
 
         // cerr << "after setting t = " << t << ", r = " << r << ", k = " << k << ", n = " << n << " from p = " << ans.P[t][r][k][n] << " to p = " << p << ", transmitted for the active frame is " << W * G[frameptr[t][n]] << "/" << F[frameptr[t][n]].thresh << " and total score is " << frames << endl;
@@ -478,6 +489,10 @@ struct ScoreKeep {
         } else if (delta > 0) {
             missing_frames.remove(j);
         }
+    }
+
+    float score() {
+        return frames + total_transmitted / tbs_sum;
     }
 };
 
@@ -859,6 +874,11 @@ double anneal_time() {
     return (cpu_time() - anneal_start) / (1.8 - anneal_start);
 }
 
+float soften(float x) {
+    if (x < 0) return -log1p(-x);
+    else return log1p(x);
+}
+
 void solve_anneal(AnswerStore &out) {
     ScoreKeep &sf = out.temp();
 
@@ -870,8 +890,6 @@ void solve_anneal(AnswerStore &out) {
     anneal_start = cpu_time();
 
     int iters = 0, no_r_src = 0, no_j_src = 0, no_r_dst = 0;
-    double accept_prob = 1;
-    double inc = -3e-5;
     // rep(_iter, 600000) {
     while (true) {
         // choose a random perturbation
@@ -926,24 +944,24 @@ void solve_anneal(AnswerStore &out) {
         // cerr << "transferring between t=" << t << ", k=" << k << ", from (r=" << r_src << ",n=" << n_src << ",bandpower=" << sf.bandpower[t][r_src][k] << ") to (r=" << r_dst << ",n=" << n_dst << ",bandpower=" << sf.bandpower[t][r_dst][k] << ")" << endl;
 
         // transfer power
-        int old_score = sf.frames;
+        float old_score = sf.score();
         float p_src = sf.ans.P[t][r_src][k][n_src];
         float p_dst = sf.ans.P[t][r_dst][k][n_dst];
         sf.set(t, r_src, k, n_src, p_src - delta);
         sf.set(t, r_dst, k, n_dst, p_dst + delta);
+        float newscore = sf.score();
         iters += 1;
 
         // undo operation if it became worse
-        // double progress = anneal_time();
-        accept_prob = 0; // exp(-progress * 30);
-        // accept_prob_log += inc;
-        if (sf.frames < old_score) {
+        float accept_prob = exp(-now * 39);
+        if (J < 800) accept_prob = 0;
+        if (newscore < old_score) {
             if (uniform_real_distribution<float>(0, 1)(rng) > accept_prob) {
                 sf.set(t, r_src, k, n_src, p_src);
                 sf.set(t, r_dst, k, n_dst, p_dst);
             }
-        } else if (sf.frames > old_score) {
-            cerr << "got to score " << sf.frames << " with accept_prob = " << accept_prob << endl;
+        } else if (newscore > old_score) {
+            cerr << "got to score " << newscore << " with accept_prob = " << accept_prob << endl;
         }
     }
 
@@ -951,6 +969,8 @@ void solve_anneal(AnswerStore &out) {
     cerr << no_r_src << " no_r_src iterations" << endl;
     cerr << no_j_src << " no_j_src iterations" << endl;
     cerr << no_r_dst << " no_r_dst iterations" << endl;
+
+    // cerr << "size heuristic: " << size_heur << endl;
 
     out.update();
 }
