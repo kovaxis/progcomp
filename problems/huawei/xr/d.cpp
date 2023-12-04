@@ -908,15 +908,15 @@ void solve_anneal(AnswerStore &out) {
 
         // pick a random destination r
         int r_dst = rng() % R;
-        if (sf.bandpower[t][r_dst][k] + delta > 4) {
-            no_r_dst += 1;
-            continue;
-        }
+        // if (sf.bandpower[t][r_dst][k] + delta > 4) {
+        //     no_r_dst += 1;
+        //     continue;
+        // }
 
         // pick a random source r among those with nonzero value
         int r_src_candidates[10];
         int r_src_count = 0;
-        rep(r, R) if ((j_src != j_dst || r != r_dst) && sf.ans.P[t][r][k][n_src] >= delta) r_src_candidates[r_src_count++] = r;
+        rep(r, R) if ((j_src != j_dst || r != r_dst) && (r == r_dst || sf.bandpower[t][r_dst][k] + delta <= 4) && sf.ans.P[t][r][k][n_src] >= delta) r_src_candidates[r_src_count++] = r;
         if (r_src_count == 0) {
             no_r_src += 1;
             continue;
