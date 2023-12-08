@@ -889,8 +889,6 @@ void solve_anneal(AnswerStore &out) {
 
     anneal_start = cpu_time();
 
-    float best_score = 0;
-
     int iters = 0, no_r_src = 0, no_j_src = 0, no_r_dst = 0;
     // rep(_iter, 600000) {
     while (true) {
@@ -952,21 +950,18 @@ void solve_anneal(AnswerStore &out) {
         sf.set(t, r_src, k, n_src, p_src - delta);
         sf.set(t, r_dst, k, n_dst, p_dst + delta);
         float newscore = sf.score();
-        best_score = max(best_score, newscore);
         iters += 1;
 
         // undo operation if it became worse
-        float accept_prob = exp(-now * 30);
-        float threshold = accept_prob;
+        float accept_prob = exp(-now * 39);
         if (J < 800) accept_prob = 0;
-        accept_prob = 0;
-        if (newscore < old_score && newscore < best_score - threshold) {
+        if (newscore < old_score) {
             if (uniform_real_distribution<float>(0, 1)(rng) > accept_prob) {
                 sf.set(t, r_src, k, n_src, p_src);
                 sf.set(t, r_dst, k, n_dst, p_dst);
             }
         } else if (newscore > old_score) {
-            cerr << "got to score " << newscore << " with accept_prob = " << accept_prob << " and thresh = " << threshold << endl;
+            cerr << "got to score " << newscore << " with accept_prob = " << accept_prob << endl;
         }
     }
 
@@ -1039,3 +1034,5 @@ int main() {
 
     cerr << "score: " << score(ans) << endl;
 }
+
+// final final v2
