@@ -1,10 +1,10 @@
 #include "../common.h"
 
 // usage:
-// St<Node<ll>> st;
+// St<ll> st;
 // st = {N};
 // st.update(index, new_value);
-// Node<ll> result = st.query(left, right);
+// ll result = st.query(left_inclusive, right_exclusive);
 
 template <class T>
 struct St {

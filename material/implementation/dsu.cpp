@@ -4,10 +4,7 @@ struct Dsu {
     vector<int> p, r;
 
     // initialize the disjoint-set-union to all unitary sets
-    void reset(int N) {
-        p.resize(N), r.assign(N, 0);
-        rep(i, N) p[i] = i;
-    }
+    Dsu(int N = 0) : p(N), r(N) { rep(i, N) p[i] = i; }
 
     // find the leader node corresponding to node `i`
     int find(int i) {
