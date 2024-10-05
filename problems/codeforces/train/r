@@ -1,0 +1,14 @@
+#!/bin/bash
+
+OK=0
+
+if [ "$1" -nt "tmp$1" ]
+then
+    echo "compiling..." >&2
+    rm -f tmp*
+    g++ -g -std=c++20 -Wall -o "tmp$1" "$1"
+    OK=$?
+fi
+
+ulimit -s 1000000
+(exit $OK) && echo "running..." >&2 && valgrind -q "./tmp$1"

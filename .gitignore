@@ -1,5 +1,4 @@
-tmp.exe
-tmp
+tmp*
 /problems/**/*.txt
 /problems/**/*.out
 __pycache__

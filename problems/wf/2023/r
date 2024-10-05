@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ $1.cpp -nt tmp ]
+then
+g++ -g -Wall -std=gnu++20 -o tmp $1.cpp
+fi
+echo running >&2
+valgrind --main-stacksize=100000000 -q ./tmp
